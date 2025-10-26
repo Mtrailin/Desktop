@@ -1,0 +1,64 @@
+{
+    "version": 1.0,
+    "environments": {
+        "default": {
+            "python_path": "${workspaceFolder}/venv/Scripts/python.exe",
+            "dependencies": [
+                "requirements.txt"
+            ]
+        },
+        "production": {
+            "python_path": "${workspaceFolder}/venv/Scripts/python.exe",
+            "dependencies": [
+                "requirements.txt"
+            ],
+            "env_vars": {
+                "PRODUCTION": "1"
+            }
+        },
+        "development": {
+            "python_path": "${workspaceFolder}/venv/Scripts/python.exe",
+            "dependencies": [
+                "requirements.txt",
+                "requirements-dev.txt"
+            ],
+            "env_vars": {
+                "DEVELOPMENT": "1"
+            }
+        }
+    },
+    "build": {
+        "targets": {
+            "gui": {
+                "script": "build_all.py",
+                "args": [
+                    "--target=gui"
+                ]
+            },
+            "cli": {
+                "script": "build_all.py",
+                "args": [
+                    "--target=cli"
+                ]
+            },
+            "validator": {
+                "script": "build_all.py",
+                "args": [
+                    "--target=validator"
+                ]
+            }
+        },
+        "output_dir": "dist",
+        "temp_dir": "build"
+    },
+    "run": {
+        "gui": {
+            "script": "crypto_trader_gui.py",
+            "environment": "development"
+        },
+        "bot": {
+            "script": "crypto_trader.py",
+            "environment": "production"
+        }
+    }
+}
