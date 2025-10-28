@@ -35,16 +35,28 @@ class ExchangeManager:
         self.logger = logging.getLogger('exchange_manager')
         
         # Determine which implementation to use
-        self.use_native = use_native_sdk and exchange_id == 'coinbase' and COINBASE_SDK_AVAILABLE
+        # Only use native SDK if:
+        # 1. use_native_sdk is True
+        # 2. exchange is Coinbase
+        # 3. SDK is available
+        # 4. API credentials are provided
+        self.use_native = (
+            use_native_sdk and 
+            exchange_id == 'coinbase' and 
+            COINBASE_SDK_AVAILABLE and
+            api_key is not None and 
+            api_secret is not None
+        )
         
         if self.use_native:
             self.logger.info(f"Using native Coinbase Advanced Trade SDK")
-            if not api_key or not api_secret:
-                raise ValueError("API key and secret required for Coinbase SDK")
             self.adapter = CoinbaseAdapter(api_key, api_secret)
             self.ccxt_exchange = None
         else:
-            self.logger.info(f"Using CCXT for {exchange_id}")
+            if exchange_id == 'coinbase' and use_native_sdk and not (api_key and api_secret):
+                self.logger.info(f"Falling back to CCXT for Coinbase (no credentials provided)")
+            else:
+                self.logger.info(f"Using CCXT for {exchange_id}")
             self.adapter = None
             self.ccxt_exchange = self._init_ccxt_exchange()
     
