@@ -33,7 +33,11 @@ ALTERNATIVE_EXCHANGES = {
             "MATIC/USD", "LINK/USD", "LTC/USD",
             "BTC/USDT", "ETH/USDT", "XRP/USDT",
             "ADA/USDT", "DOGE/USDT", "SOL/USDT",
-            "MATIC/USDT", "LINK/USDT", "LTC/USDT"
+            "MATIC/USDT", "LINK/USDT", "LTC/USDT",
+            # Canadian CAD pairs
+            "BTC/CAD", "ETH/CAD", "XRP/CAD",
+            "ADA/CAD", "DOGE/CAD", "SOL/CAD",
+            "MATIC/CAD", "LINK/CAD", "LTC/CAD"
         ],
         trading_fees={
             "maker": 0.004,  # 0.4% standard, can be lower with volume
@@ -44,6 +48,7 @@ ALTERNATIVE_EXCHANGES = {
             "ETH": 0.002,
             "USDT": 1,
             "USD": 0,  # Free for USD to US bank
+            "CAD": 0,  # Free for CAD to Canadian bank
             "XRP": 0.02,
             "ADA": 1,
             "DOGE": 2,
@@ -57,6 +62,7 @@ ALTERNATIVE_EXCHANGES = {
             "ETH": 0.001,
             "USDT": 1,
             "USD": 1,
+            "CAD": 1,
             "XRP": 1,
             "ADA": 5,
             "DOGE": 10,
@@ -334,8 +340,8 @@ def get_best_exchange(pair: str) -> str:
     if not available_exchanges:
         raise ValueError(f"No exchange supports trading pair {pair}")
 
-    # Special handling for USD pairs - prefer Coinbase for USD pairs if available
-    if pair.endswith('/USD') and 'coinbase' in available_exchanges:
+    # Special handling for fiat pairs - prefer Coinbase for USD/CAD pairs if available
+    if (pair.endswith('/USD') or pair.endswith('/CAD')) and 'coinbase' in available_exchanges:
         return 'coinbase'
 
     # For other pairs, prioritize exchanges by fees, priority, and features

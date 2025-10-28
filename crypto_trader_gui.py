@@ -8,7 +8,7 @@ from datetime import datetime
 import logging
 from crypto_trader import CryptoTrader
 from market_data_collector import MarketDataCollector
-from performance_tracker import PerfomanceTracker
+from performance_tracker import PerformanceTracker
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -33,7 +33,7 @@ class CryptoTraderGUI(tk.Tk):
         self.trader = None
 
         # Initialize performance tracker with type hint
-        self.performance_tracker: PerfomanceTracker = PerfomanceTracker()
+        self.performance_tracker: PerformanceTracker = PerformanceTracker()
         self.last_update_time = datetime.now()
 
         # Load previous performance history if available
@@ -51,14 +51,18 @@ class CryptoTraderGUI(tk.Tk):
         # Default configuration
         return {
             "exchange": {
-                "id": "binance",
+                "id": "coinbase",
                 "api_key": "",
                 "secret_key": "",
                 "symbols": [
                     "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT",
                     "ADA/USDT", "DOGE/USDT", "SOL/USDT", "DOT/USDT",
                     "AVAX/USDT", "MATIC/USDT", "LINK/USDT", "UNI/USDT",
-                    "ATOM/USDT", "LTC/USDT", "ETC/USDT"
+                    "ATOM/USDT", "LTC/USDT", "ETC/USDT",
+                    # Canadian CAD pairs for Coinbase
+                    "BTC/CAD", "ETH/CAD", "XRP/CAD",
+                    "ADA/CAD", "DOGE/CAD", "SOL/CAD",
+                    "MATIC/CAD", "LINK/CAD", "LTC/CAD"
                 ],
                 "timeframes": ["1m", "5m", "15m", "1h", "4h", "1d"]
             },
@@ -118,6 +122,7 @@ class CryptoTraderGUI(tk.Tk):
         self.create_model_tab()
         self.create_monitor_tab()
         self.create_performance_tab()  # Add performance tracking tab
+        self.create_settings_tab()  # Add comprehensive settings tab
 
     def create_exchange_tab(self):
         """Create exchange settings tab"""
@@ -130,7 +135,7 @@ class CryptoTraderGUI(tk.Tk):
         ttk.Combobox(
             tab,
             textvariable=self.exchange_var,
-            values=["binance", "kucoin", "bybit"]
+            values=["binance", "coinbase", "kucoin", "bybit", "mexc", "gate", "huobi"]
         ).grid(row=0, column=1, padx=5, pady=5)
 
         # API Credentials
@@ -444,6 +449,374 @@ class CryptoTraderGUI(tk.Tk):
             self.status_var.set(f"Performance update error: {e}")
             # Still try to schedule next update
             self.after(1000, self.update_performance)
+
+    def create_settings_tab(self):
+        """Create comprehensive multi-level settings tab"""
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="Settings")
+        
+        # Create a canvas with scrollbar for settings
+        canvas = tk.Canvas(tab)
+        scrollbar = ttk.Scrollbar(tab, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack the canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Create nested notebooks for multi-level settings
+        settings_notebook = ttk.Notebook(scrollable_frame)
+        settings_notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Level 1: General Settings
+        self.create_general_settings(settings_notebook)
+        
+        # Level 2: Advanced Settings
+        self.create_advanced_settings(settings_notebook)
+        
+        # Level 3: Risk Management Settings
+        self.create_risk_management_settings(settings_notebook)
+        
+        # Level 4: Notification Settings
+        self.create_notification_settings(settings_notebook)
+        
+        # Level 5: API & Integration Settings
+        self.create_api_integration_settings(settings_notebook)
+        
+        # Save all settings button at bottom
+        save_frame = ttk.Frame(scrollable_frame)
+        save_frame.pack(fill=tk.X, padx=5, pady=10)
+        
+        ttk.Button(
+            save_frame,
+            text="Save All Settings",
+            command=self.save_all_settings
+        ).pack(pady=10)
+        
+        ttk.Button(
+            save_frame,
+            text="Reset to Defaults",
+            command=self.reset_to_defaults
+        ).pack(pady=5)
+    
+    def create_general_settings(self, parent_notebook):
+        """Create general settings sub-tab"""
+        tab = ttk.Frame(parent_notebook)
+        parent_notebook.add(tab, text="General")
+        
+        # Application Settings
+        app_frame = ttk.LabelFrame(tab, text="Application Settings", padding=10)
+        app_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(app_frame, text="Theme:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.theme_var = tk.StringVar(value=self.config.get("theme", "default"))
+        ttk.Combobox(
+            app_frame,
+            textvariable=self.theme_var,
+            values=["default", "dark", "light"],
+            state="readonly"
+        ).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(app_frame, text="Language:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.language_var = tk.StringVar(value=self.config.get("language", "English"))
+        ttk.Combobox(
+            app_frame,
+            textvariable=self.language_var,
+            values=["English", "French", "Spanish", "German"],
+            state="readonly"
+        ).grid(row=1, column=1, padx=5, pady=5)
+        
+        ttk.Label(app_frame, text="Auto-save interval (min):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.autosave_var = tk.StringVar(value=str(self.config.get("autosave_interval", 5)))
+        ttk.Entry(app_frame, textvariable=self.autosave_var, width=10).grid(row=2, column=1, padx=5, pady=5)
+        
+        # Display Settings
+        display_frame = ttk.LabelFrame(tab, text="Display Settings", padding=10)
+        display_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        self.show_tooltips_var = tk.BooleanVar(value=self.config.get("show_tooltips", True))
+        ttk.Checkbutton(
+            display_frame,
+            text="Show Tooltips",
+            variable=self.show_tooltips_var
+        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        self.show_grid_var = tk.BooleanVar(value=self.config.get("show_grid", True))
+        ttk.Checkbutton(
+            display_frame,
+            text="Show Grid in Charts",
+            variable=self.show_grid_var
+        ).grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        
+        ttk.Label(display_frame, text="Chart Refresh Rate (sec):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.chart_refresh_var = tk.StringVar(value=str(self.config.get("chart_refresh", 5)))
+        ttk.Entry(display_frame, textvariable=self.chart_refresh_var, width=10).grid(row=2, column=1, padx=5, pady=5)
+    
+    def create_advanced_settings(self, parent_notebook):
+        """Create advanced settings sub-tab"""
+        tab = ttk.Frame(parent_notebook)
+        parent_notebook.add(tab, text="Advanced")
+        
+        # Performance Settings
+        perf_frame = ttk.LabelFrame(tab, text="Performance Optimization", padding=10)
+        perf_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(perf_frame, text="Max Concurrent Requests:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.max_requests_var = tk.StringVar(value=str(self.config.get("max_concurrent_requests", 5)))
+        ttk.Entry(perf_frame, textvariable=self.max_requests_var, width=10).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(perf_frame, text="Request Timeout (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.request_timeout_var = tk.StringVar(value=str(self.config.get("request_timeout", 30)))
+        ttk.Entry(perf_frame, textvariable=self.request_timeout_var, width=10).grid(row=1, column=1, padx=5, pady=5)
+        
+        self.enable_caching_var = tk.BooleanVar(value=self.config.get("enable_caching", True))
+        ttk.Checkbutton(
+            perf_frame,
+            text="Enable Data Caching",
+            variable=self.enable_caching_var
+        ).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        
+        # Data Storage Settings
+        storage_frame = ttk.LabelFrame(tab, text="Data Storage", padding=10)
+        storage_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(storage_frame, text="Max History Days:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.max_history_var = tk.StringVar(value=str(self.config.get("max_history_days", 365)))
+        ttk.Entry(storage_frame, textvariable=self.max_history_var, width=10).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(storage_frame, text="Log Retention Days:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.log_retention_var = tk.StringVar(value=str(self.config.get("log_retention_days", 30)))
+        ttk.Entry(storage_frame, textvariable=self.log_retention_var, width=10).grid(row=1, column=1, padx=5, pady=5)
+        
+        self.compress_old_data_var = tk.BooleanVar(value=self.config.get("compress_old_data", True))
+        ttk.Checkbutton(
+            storage_frame,
+            text="Compress Old Data",
+            variable=self.compress_old_data_var
+        ).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+    
+    def create_risk_management_settings(self, parent_notebook):
+        """Create risk management settings sub-tab"""
+        tab = ttk.Frame(parent_notebook)
+        parent_notebook.add(tab, text="Risk Management")
+        
+        # Position Sizing
+        position_frame = ttk.LabelFrame(tab, text="Position Sizing", padding=10)
+        position_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(position_frame, text="Max Position Size (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.max_position_var = tk.StringVar(value=str(self.config.get("max_position_size", 10)))
+        ttk.Entry(position_frame, textvariable=self.max_position_var, width=10).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(position_frame, text="Max Open Positions:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.max_open_pos_var = tk.StringVar(value=str(self.config.get("max_open_positions", 5)))
+        ttk.Entry(position_frame, textvariable=self.max_open_pos_var, width=10).grid(row=1, column=1, padx=5, pady=5)
+        
+        ttk.Label(position_frame, text="Position Sizing Method:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.position_method_var = tk.StringVar(value=self.config.get("position_sizing_method", "Fixed"))
+        ttk.Combobox(
+            position_frame,
+            textvariable=self.position_method_var,
+            values=["Fixed", "Percentage", "Kelly Criterion", "ATR-based"],
+            state="readonly"
+        ).grid(row=2, column=1, padx=5, pady=5)
+        
+        # Loss Limits
+        loss_frame = ttk.LabelFrame(tab, text="Loss Limits", padding=10)
+        loss_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(loss_frame, text="Max Daily Loss (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.max_daily_loss_var = tk.StringVar(value=str(self.config.get("max_daily_loss", 5)))
+        ttk.Entry(loss_frame, textvariable=self.max_daily_loss_var, width=10).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(loss_frame, text="Max Weekly Loss (%):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.max_weekly_loss_var = tk.StringVar(value=str(self.config.get("max_weekly_loss", 10)))
+        ttk.Entry(loss_frame, textvariable=self.max_weekly_loss_var, width=10).grid(row=1, column=1, padx=5, pady=5)
+        
+        self.auto_stop_on_limit_var = tk.BooleanVar(value=self.config.get("auto_stop_on_limit", True))
+        ttk.Checkbutton(
+            loss_frame,
+            text="Auto-stop Trading on Limit Hit",
+            variable=self.auto_stop_on_limit_var
+        ).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+    
+    def create_notification_settings(self, parent_notebook):
+        """Create notification settings sub-tab"""
+        tab = ttk.Frame(parent_notebook)
+        parent_notebook.add(tab, text="Notifications")
+        
+        # Alert Settings
+        alert_frame = ttk.LabelFrame(tab, text="Alert Preferences", padding=10)
+        alert_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        self.notify_trades_var = tk.BooleanVar(value=self.config.get("notify_trades", True))
+        ttk.Checkbutton(
+            alert_frame,
+            text="Notify on Trades",
+            variable=self.notify_trades_var
+        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        self.notify_errors_var = tk.BooleanVar(value=self.config.get("notify_errors", True))
+        ttk.Checkbutton(
+            alert_frame,
+            text="Notify on Errors",
+            variable=self.notify_errors_var
+        ).grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        
+        self.notify_limits_var = tk.BooleanVar(value=self.config.get("notify_limits", True))
+        ttk.Checkbutton(
+            alert_frame,
+            text="Notify on Loss Limits",
+            variable=self.notify_limits_var
+        ).grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        
+        # Notification Methods
+        method_frame = ttk.LabelFrame(tab, text="Notification Methods", padding=10)
+        method_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        self.notify_email_var = tk.BooleanVar(value=self.config.get("notify_email", False))
+        ttk.Checkbutton(
+            method_frame,
+            text="Email Notifications",
+            variable=self.notify_email_var
+        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        ttk.Label(method_frame, text="Email Address:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.email_address_var = tk.StringVar(value=self.config.get("email_address", ""))
+        ttk.Entry(method_frame, textvariable=self.email_address_var, width=30).grid(row=1, column=1, padx=5, pady=5)
+        
+        self.notify_sound_var = tk.BooleanVar(value=self.config.get("notify_sound", True))
+        ttk.Checkbutton(
+            method_frame,
+            text="Sound Alerts",
+            variable=self.notify_sound_var
+        ).grid(row=2, column=0, padx=5, pady=5, sticky="w")
+    
+    def create_api_integration_settings(self, parent_notebook):
+        """Create API & integration settings sub-tab"""
+        tab = ttk.Frame(parent_notebook)
+        parent_notebook.add(tab, text="API & Integration")
+        
+        # Exchange API Settings
+        api_frame = ttk.LabelFrame(tab, text="Exchange API Configuration", padding=10)
+        api_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        ttk.Label(api_frame, text="Rate Limit Buffer (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.rate_limit_buffer_var = tk.StringVar(value=str(self.config.get("rate_limit_buffer", 20)))
+        ttk.Entry(api_frame, textvariable=self.rate_limit_buffer_var, width=10).grid(row=0, column=1, padx=5, pady=5)
+        
+        ttk.Label(api_frame, text="Retry Attempts:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.retry_attempts_var = tk.StringVar(value=str(self.config.get("retry_attempts", 3)))
+        ttk.Entry(api_frame, textvariable=self.retry_attempts_var, width=10).grid(row=1, column=1, padx=5, pady=5)
+        
+        self.use_testnet_var = tk.BooleanVar(value=self.config.get("use_testnet", False))
+        ttk.Checkbutton(
+            api_frame,
+            text="Use Testnet (Paper Trading)",
+            variable=self.use_testnet_var
+        ).grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+        
+        # External Integrations
+        integration_frame = ttk.LabelFrame(tab, text="External Integrations", padding=10)
+        integration_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        
+        self.enable_telegram_var = tk.BooleanVar(value=self.config.get("enable_telegram", False))
+        ttk.Checkbutton(
+            integration_frame,
+            text="Enable Telegram Bot",
+            variable=self.enable_telegram_var
+        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        ttk.Label(integration_frame, text="Telegram Bot Token:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.telegram_token_var = tk.StringVar(value=self.config.get("telegram_token", ""))
+        ttk.Entry(integration_frame, textvariable=self.telegram_token_var, width=30, show="*").grid(row=1, column=1, padx=5, pady=5)
+        
+        self.enable_webhook_var = tk.BooleanVar(value=self.config.get("enable_webhook", False))
+        ttk.Checkbutton(
+            integration_frame,
+            text="Enable Webhook Notifications",
+            variable=self.enable_webhook_var
+        ).grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        
+        ttk.Label(integration_frame, text="Webhook URL:").grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.webhook_url_var = tk.StringVar(value=self.config.get("webhook_url", ""))
+        ttk.Entry(integration_frame, textvariable=self.webhook_url_var, width=30).grid(row=3, column=1, padx=5, pady=5)
+    
+    def save_all_settings(self):
+        """Save all settings from the settings tab"""
+        try:
+            # General settings
+            self.config["theme"] = self.theme_var.get()
+            self.config["language"] = self.language_var.get()
+            self.config["autosave_interval"] = int(self.autosave_var.get())
+            self.config["show_tooltips"] = self.show_tooltips_var.get()
+            self.config["show_grid"] = self.show_grid_var.get()
+            self.config["chart_refresh"] = int(self.chart_refresh_var.get())
+            
+            # Advanced settings
+            self.config["max_concurrent_requests"] = int(self.max_requests_var.get())
+            self.config["request_timeout"] = int(self.request_timeout_var.get())
+            self.config["enable_caching"] = self.enable_caching_var.get()
+            self.config["max_history_days"] = int(self.max_history_var.get())
+            self.config["log_retention_days"] = int(self.log_retention_var.get())
+            self.config["compress_old_data"] = self.compress_old_data_var.get()
+            
+            # Risk management settings
+            self.config["max_position_size"] = float(self.max_position_var.get())
+            self.config["max_open_positions"] = int(self.max_open_pos_var.get())
+            self.config["position_sizing_method"] = self.position_method_var.get()
+            self.config["max_daily_loss"] = float(self.max_daily_loss_var.get())
+            self.config["max_weekly_loss"] = float(self.max_weekly_loss_var.get())
+            self.config["auto_stop_on_limit"] = self.auto_stop_on_limit_var.get()
+            
+            # Notification settings
+            self.config["notify_trades"] = self.notify_trades_var.get()
+            self.config["notify_errors"] = self.notify_errors_var.get()
+            self.config["notify_limits"] = self.notify_limits_var.get()
+            self.config["notify_email"] = self.notify_email_var.get()
+            self.config["email_address"] = self.email_address_var.get()
+            self.config["notify_sound"] = self.notify_sound_var.get()
+            
+            # API & integration settings
+            self.config["rate_limit_buffer"] = int(self.rate_limit_buffer_var.get())
+            self.config["retry_attempts"] = int(self.retry_attempts_var.get())
+            self.config["use_testnet"] = self.use_testnet_var.get()
+            self.config["enable_telegram"] = self.enable_telegram_var.get()
+            self.config["telegram_token"] = self.telegram_token_var.get()
+            self.config["enable_webhook"] = self.enable_webhook_var.get()
+            self.config["webhook_url"] = self.webhook_url_var.get()
+            
+            self.save_config()
+            self.logger.info("All settings saved successfully")
+            messagebox.showinfo("Success", "All settings saved successfully!")
+            
+        except Exception as e:
+            self.logger.error(f"Error saving settings: {e}")
+            messagebox.showerror("Error", f"Failed to save settings: {e}")
+    
+    def reset_to_defaults(self):
+        """Reset all settings to default values"""
+        if messagebox.askyesno("Confirm Reset", "Are you sure you want to reset all settings to defaults?"):
+            try:
+                # Reset to default configuration
+                self.config = self.load_config()
+                
+                # Reload all UI elements with default values
+                # This would need to be implemented for each variable
+                self.logger.info("Settings reset to defaults")
+                messagebox.showinfo("Success", "Settings reset to defaults. Please restart the application.")
+                
+            except Exception as e:
+                self.logger.error(f"Error resetting settings: {e}")
+                messagebox.showerror("Error", f"Failed to reset settings: {e}")
 
     def create_status_bar(self):
         """Create status bar"""
