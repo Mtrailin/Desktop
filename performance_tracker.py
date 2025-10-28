@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 import json
 from pathlib import Path
 
-class PerfomanceTracker:
+class PerformanceTracker:
     def __init__(self, initial_balance: float = 0.0):
         self.reset(initial_balance)
 
