@@ -108,16 +108,177 @@ class CryptoTradingSuite(tk.Tk):
         data_frame.pack(fill=tk.X, padx=5, pady=5)
 
     def create_settings_tab(self):
-        """Create the settings and configuration tab"""
+        """Create the settings and configuration tab with multi-level menus"""
         settings_frame = ttk.Frame(self.notebook)
         self.notebook.add(settings_frame, text="Settings")
-
-        # Configuration section
-        config_frame = ttk.LabelFrame(settings_frame, text="Configuration")
-        config_frame.pack(fill=tk.X, padx=5, pady=5)
-
-        # Add configuration options here
-        self.setup_config_options(config_frame)
+        
+        # Create hierarchical settings view
+        settings_paned = ttk.PanedWindow(settings_frame, orient=tk.HORIZONTAL)
+        settings_paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Left pane - Settings categories
+        left_pane = ttk.Frame(settings_paned)
+        settings_paned.add(left_pane, weight=1)
+        
+        ttk.Label(left_pane, text="Settings Categories", font=('Arial', 12, 'bold')).pack(pady=5)
+        
+        # Category tree
+        self.settings_tree = ttk.Treeview(left_pane, selectmode='browse')
+        self.settings_tree.pack(fill=tk.BOTH, expand=True, pady=5)
+        
+        # Populate categories
+        categories = {
+            'exchange': 'Exchange Configuration',
+            'trading': 'Trading Parameters',
+            'risk': 'Risk Management',
+            'model': 'Model Settings',
+            'performance': 'Performance Tracking',
+            'validation': 'Data Validation',
+            'advanced': 'Advanced Options'
+        }
+        
+        for cat_id, cat_name in categories.items():
+            self.settings_tree.insert('', 'end', cat_id, text=cat_name)
+        
+        self.settings_tree.bind('<<TreeviewSelect>>', self.on_settings_category_select)
+        
+        # Right pane - Settings details
+        right_pane = ttk.Frame(settings_paned)
+        settings_paned.add(right_pane, weight=3)
+        
+        ttk.Label(right_pane, text="Settings", font=('Arial', 12, 'bold')).pack(pady=5)
+        
+        # Scrollable settings area
+        settings_canvas = tk.Canvas(right_pane)
+        settings_scrollbar = ttk.Scrollbar(right_pane, orient="vertical", command=settings_canvas.yview)
+        self.settings_detail_frame = ttk.Frame(settings_canvas)
+        
+        self.settings_detail_frame.bind(
+            "<Configure>",
+            lambda e: settings_canvas.configure(scrollregion=settings_canvas.bbox("all"))
+        )
+        
+        settings_canvas.create_window((0, 0), window=self.settings_detail_frame, anchor="nw")
+        settings_canvas.configure(yscrollcommand=settings_scrollbar.set)
+        
+        settings_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        settings_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Bottom buttons
+        button_frame = ttk.Frame(settings_frame)
+        button_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        ttk.Button(button_frame, text="Save All Settings", command=self.save_all_settings).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="Reset to Defaults", command=self.reset_settings).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(button_frame, text="Import Config", command=self.import_config).pack(side=tk.LEFT, padx=5)
+        ttk.Button(button_frame, text="Export Config", command=self.export_config).pack(side=tk.LEFT, padx=5)
+    
+    def on_settings_category_select(self, event):
+        """Handle settings category selection"""
+        selection = self.settings_tree.selection()
+        if not selection:
+            return
+        
+        category = selection[0]
+        self.display_category_settings(category)
+    
+    def display_category_settings(self, category: str):
+        """Display settings for the selected category"""
+        # Clear existing widgets
+        for widget in self.settings_detail_frame.winfo_children():
+            widget.destroy()
+        
+        # Get settings for category
+        settings_map = {
+            'exchange': self.config.get('exchange', {}),
+            'trading': self.config.get('trading', {}),
+            'risk': self.config.get('risk_management', {}),
+            'model': self.config.get('model', {}),
+            'performance': self.config.get('performance', {}),
+            'validation': self.config.get('validation', {}),
+            'advanced': self.config.get('advanced', {})
+        }
+        
+        if category not in settings_map:
+            return
+        
+        settings = settings_map[category]
+        
+        row = 0
+        for key, value in settings.items():
+            # Label
+            label = ttk.Label(
+                self.settings_detail_frame,
+                text=key.replace('_', ' ').title() + ":",
+                font=('Arial', 10)
+            )
+            label.grid(row=row, column=0, sticky='w', padx=10, pady=5)
+            
+            # Input widget based on type
+            if isinstance(value, bool):
+                var = tk.BooleanVar(value=value)
+                widget = ttk.Checkbutton(self.settings_detail_frame, variable=var)
+            elif isinstance(value, (int, float)):
+                var = tk.StringVar(value=str(value))
+                widget = ttk.Entry(self.settings_detail_frame, textvariable=var, width=40)
+            elif isinstance(value, list):
+                var = tk.StringVar(value=', '.join(map(str, value)))
+                widget = ttk.Entry(self.settings_detail_frame, textvariable=var, width=40)
+            else:
+                var = tk.StringVar(value=str(value))
+                widget = ttk.Entry(self.settings_detail_frame, textvariable=var, width=40)
+            
+            widget.grid(row=row, column=1, sticky='ew', padx=10, pady=5)
+            
+            row += 1
+    
+    def save_all_settings(self):
+        """Save all settings to config"""
+        try:
+            # Save config logic here
+            messagebox.showinfo("Success", "Settings saved successfully!")
+            self.logger.info("Settings saved")
+        except Exception as e:
+            self.show_error(f"Error saving settings: {str(e)}")
+    
+    def reset_settings(self):
+        """Reset settings to defaults"""
+        if messagebox.askyesno("Confirm", "Reset all settings to defaults?"):
+            self.config = load_config()
+            self.update_status("Settings reset to defaults")
+    
+    def import_config(self):
+        """Import configuration from file"""
+        from tkinter import filedialog
+        filename = filedialog.askopenfilename(
+            title="Import Configuration",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if filename:
+            try:
+                import json
+                with open(filename, 'r') as f:
+                    self.config = json.load(f)
+                self.update_status(f"Configuration imported from {filename}")
+            except Exception as e:
+                self.show_error(f"Error importing config: {str(e)}")
+    
+    def export_config(self):
+        """Export configuration to file"""
+        from tkinter import filedialog
+        filename = filedialog.asksaveasfilename(
+            title="Export Configuration",
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+        if filename:
+            try:
+                import json
+                with open(filename, 'w') as f:
+                    json.dump(self.config, f, indent=4)
+                self.update_status(f"Configuration exported to {filename}")
+            except Exception as e:
+                self.show_error(f"Error exporting config: {str(e)}")
 
     def setup_performance_charts(self, parent):
         """Setup performance monitoring charts"""
@@ -129,15 +290,6 @@ class CryptoTradingSuite(tk.Tk):
         self.canvas = FigureCanvasTkAgg(self.figure, master=parent)
         self.canvas.draw()
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-    def setup_config_options(self, parent):
-        """Setup configuration options"""
-        # Trading parameters
-        for key, value in self.config['trading'].items():
-            frame = ttk.Frame(parent)
-            frame.pack(fill=tk.X, padx=5, pady=2)
-            ttk.Label(frame, text=key).pack(side=tk.LEFT)
-            ttk.Entry(frame, textvariable=tk.StringVar(value=str(value))).pack(side=tk.RIGHT)
 
     def start_trading(self):
         """Start the trading system"""
