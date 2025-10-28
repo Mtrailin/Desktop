@@ -8,7 +8,6 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 import logging
-import json
 import os
 
 # Configuration constants
@@ -282,7 +281,7 @@ class CryptoTrader:
                 limit = days_history * 6
             elif self.timeframe == '1d':
                 limit = days_history
-            
+
             # Fetch data with API limit
             df = self.fetch_data(limit=min(limit, API_DATA_LIMIT))
             if df is not None:
@@ -301,14 +300,14 @@ class CryptoTrader:
             df = self.fetch_data(limit=1000)
             if df is None:
                 raise ValueError("No data available for training")
-            
+
             # Preprocess data
             data = self.preprocess_data(df)
-            
+
             # Create dataset
             dataset = CryptoDataset(data, self.sequence_length)
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-            
+
             # Training loop
             self.model.train()
             for epoch in range(epochs):
@@ -320,12 +319,12 @@ class CryptoTrader:
                     loss.backward()
                     self.optimizer.step()
                     total_loss += loss.item()
-                
+
                 avg_loss = total_loss / len(dataloader)
                 logging.info(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
-            
+
             logging.info("Training completed successfully")
-            
+
         except Exception as e:
             logging.error(f"Error during training: {e}")
             raise
@@ -337,20 +336,20 @@ class CryptoTrader:
             df = self.fetch_data(limit=500)
             if df is None:
                 raise ValueError("No data available for validation")
-            
+
             # Preprocess data
             data = self.preprocess_data(df)
-            
+
             # Create dataset
             dataset = CryptoDataset(data, self.sequence_length)
             dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
-            
+
             # Validation
             self.model.eval()
             total_loss = 0
             predictions = []
             actuals = []
-            
+
             with torch.no_grad():
                 for sequences, targets in dataloader:
                     outputs = self.model(sequences)
@@ -358,26 +357,26 @@ class CryptoTrader:
                     total_loss += loss.item()
                     predictions.extend(outputs.numpy().flatten())
                     actuals.extend(targets.numpy().flatten())
-            
+
             avg_loss = total_loss / len(dataloader)
-            
+
             # Calculate metrics
             predictions = np.array(predictions)
             actuals = np.array(actuals)
             mse = np.mean((predictions - actuals) ** 2)
             rmse = np.sqrt(mse)
             mae = np.mean(np.abs(predictions - actuals))
-            
+
             metrics = {
                 'avg_loss': avg_loss,
                 'mse': mse,
                 'rmse': rmse,
                 'mae': mae
             }
-            
+
             logging.info(f"Validation metrics: {metrics}")
             return metrics
-            
+
         except Exception as e:
             logging.error(f"Error during validation: {e}")
             raise
@@ -389,34 +388,34 @@ class CryptoTrader:
             df = self.fetch_data(limit=1000)
             if df is None:
                 raise ValueError("No data available for backtesting")
-            
+
             # Filter by date range
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             start = pd.to_datetime(start_date)
             end = pd.to_datetime(end_date)
             df = df[(df['timestamp'] >= start) & (df['timestamp'] <= end)]
-            
+
             if len(df) < self.sequence_length:
                 raise ValueError("Insufficient data for backtesting period")
-            
+
             # Initialize backtesting variables
             balance = initial_balance
             position = None
             trades = []
             equity_curve = []
-            
+
             # Preprocess data
             data = self.preprocess_data(df)
-            
+
             # Run backtest
             # Note: For large datasets, consider batching predictions to improve performance
             for i in range(self.sequence_length, len(data)):
                 sequence = data[i-self.sequence_length:i]
                 prediction = self.predict(sequence)
                 current_price = df.iloc[i]['close']
-                
+
                 signal = self.generate_signals(prediction, current_price)
-                
+
                 if signal == 'buy' and position is None:
                     # Enter long position (use configurable position size from constant)
                     position = {
@@ -429,34 +428,34 @@ class CryptoTrader:
                     exit_price = current_price
                     pnl = (exit_price - position['entry_price']) * position['size']
                     balance += pnl
-                    
+
                     trades.append({
                         'entry_price': position['entry_price'],
                         'exit_price': exit_price,
                         'pnl': pnl,
                         'return': (exit_price / position['entry_price'] - 1) * 100
                     })
-                    
+
                     position = None
-                
+
                 # Track equity
                 current_equity = balance
                 if position is not None:
                     current_equity += (current_price - position['entry_price']) * position['size']
                 equity_curve.append(current_equity)
-            
+
             # Calculate performance metrics
             total_returns = (balance - initial_balance) / initial_balance * 100
-            
+
             if len(trades) > 0:
                 winning_trades = [t for t in trades if t['pnl'] > 0]
                 win_rate = len(winning_trades) / len(trades) * 100
-                
+
                 returns = [t['return'] for t in trades]
                 avg_return = np.mean(returns)
                 std_return = np.std(returns)
                 sharpe_ratio = avg_return / std_return if std_return > 0 else 0
-                
+
                 equity_curve = np.array(equity_curve)
                 peak = np.maximum.accumulate(equity_curve)
                 drawdown = (peak - equity_curve) / peak * 100
@@ -465,7 +464,7 @@ class CryptoTrader:
                 win_rate = 0
                 sharpe_ratio = 0
                 max_drawdown = 0
-            
+
             results = {
                 'total_returns': total_returns,
                 'sharpe_ratio': sharpe_ratio,
@@ -474,10 +473,10 @@ class CryptoTrader:
                 'total_trades': len(trades),
                 'final_balance': balance
             }
-            
+
             logging.info(f"Backtest results: {results}")
             return results
-            
+
         except Exception as e:
             logging.error(f"Error during backtesting: {e}")
             raise
