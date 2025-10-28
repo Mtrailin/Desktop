@@ -59,6 +59,33 @@ COINBASE_API_SECRET=your_api_secret_here
 
 Or configure them in the GUI under **Exchange Settings**.
 
+### 4. Verify Setup
+
+Run the setup script to verify your API credentials:
+
+```bash
+python setup_coinbase.py
+```
+
+This will:
+- Check SDK installation
+- Verify your API credentials
+- Test the connection to Coinbase
+- Show your account balance and available products
+
+### 5. Quick Start
+
+Try the quick start script to see your Coinbase data:
+
+```bash
+python quick_start_coinbase.py
+```
+
+This will display:
+- Your account balances
+- Current market prices
+- Recent price data for BTC/USD
+
 ## Usage
 
 ### Using the Exchange Manager
