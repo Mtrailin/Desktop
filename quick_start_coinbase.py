@@ -74,7 +74,8 @@ def main():
             if ticker:
                 price = ticker.get('last', 0)
                 print(f"{symbol:10} ${price:>10,.2f}")
-        except:
+        except Exception:
+            # Skip symbols that fail to fetch
             pass
     
     # Get recent data

@@ -85,7 +85,8 @@ def test_connection(api_key, api_secret):
                 available = account.get('available_balance', {}).get('value', '0')
                 print(f"  {currency}: {available}")
         else:
-            print("✓ API connection successful, but no accounts found")
+            print("⚠ API connection successful, but no accounts returned")
+            print("  This may indicate your account has no funded currencies")
         
         # Test 2: List products
         print("\nTest 2: Fetching available trading products...")

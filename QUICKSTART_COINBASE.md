@@ -147,7 +147,7 @@ Make sure your API key has these permissions:
 2. **Use Limit Orders**: More control than market orders
 3. **Set Stop Losses**: Always have a risk management plan
 4. **Monitor Your Bot**: Don't leave it unattended initially
-5. **Check Fees**: Coinbase has maker (0.4%) and taker (0.6%) fees
+5. **Check Fees**: Review [Coinbase's current fee schedule](https://help.coinbase.com/en/advanced-trade/trading-and-funding/trading-fees) (varies by volume)
 
 ## Useful Commands
 
