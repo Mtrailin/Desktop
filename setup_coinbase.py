@@ -59,7 +59,8 @@ def load_credentials():
         return None, None
     
     # Show masked credentials for verification (security best practice)
-    print(f"✓ API Key found: {api_key[:8]}{'*' * 8}...")
+    # Do not log any part of the actual credentials
+    print(f"✓ API Key found: {'*' * 16}... (length: {len(api_key)})")
     print(f"✓ API Secret found: {'*' * 16}... (hidden)")
     
     return api_key, api_secret
