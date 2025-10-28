@@ -11,6 +11,10 @@ import logging
 import json
 import os
 
+# Configuration constants
+API_DATA_LIMIT = 1000  # Maximum data points to fetch from API
+BACKTEST_POSITION_SIZE = 0.95  # Use 95% of balance for backtesting positions
+
 class CryptoDataset(Dataset):
     def __init__(self, data, sequence_length=60):
         self.data = torch.FloatTensor(data)
@@ -279,8 +283,8 @@ class CryptoTrader:
             elif self.timeframe == '1d':
                 limit = days_history
             
-            # Fetch data
-            df = self.fetch_data(limit=min(limit, 1000))  # API limits
+            # Fetch data with API limit
+            df = self.fetch_data(limit=min(limit, API_DATA_LIMIT))
             if df is not None:
                 logging.info(f"Collected {len(df)} data points for training")
                 return df
@@ -405,6 +409,7 @@ class CryptoTrader:
             data = self.preprocess_data(df)
             
             # Run backtest
+            # Note: For large datasets, consider batching predictions to improve performance
             for i in range(self.sequence_length, len(data)):
                 sequence = data[i-self.sequence_length:i]
                 prediction = self.predict(sequence)
@@ -413,10 +418,10 @@ class CryptoTrader:
                 signal = self.generate_signals(prediction, current_price)
                 
                 if signal == 'buy' and position is None:
-                    # Enter long position
+                    # Enter long position (use configurable position size from constant)
                     position = {
                         'entry_price': current_price,
-                        'size': balance * 0.95 / current_price,  # 95% of balance
+                        'size': balance * BACKTEST_POSITION_SIZE / current_price,
                         'entry_time': df.iloc[i]['timestamp']
                     }
                 elif signal == 'sell' and position is not None:
