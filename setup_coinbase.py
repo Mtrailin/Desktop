@@ -58,8 +58,9 @@ def load_credentials():
         print("✗ COINBASE_API_SECRET not found or not set in .env file")
         return None, None
     
-    print(f"✓ API Key found: {api_key[:10]}...")
-    print(f"✓ API Secret found: {api_secret[:10]}...")
+    # Show masked credentials for verification (security best practice)
+    print(f"✓ API Key found: {api_key[:8]}{'*' * 8}...")
+    print(f"✓ API Secret found: {'*' * 16}... (hidden)")
     
     return api_key, api_secret
 
