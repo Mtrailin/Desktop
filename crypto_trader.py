@@ -263,6 +263,220 @@ class CryptoTrader:
         except Exception as e:
             logging.error(f"Error loading model: {e}")
 
+    def collect_training_data(self, days_history=60):
+        """Collect historical data for training"""
+        try:
+            # Calculate the number of data points needed
+            limit = days_history * 24 * 60  # Assuming 1-minute timeframe
+            if self.timeframe == '5m':
+                limit = days_history * 24 * 12
+            elif self.timeframe == '15m':
+                limit = days_history * 24 * 4
+            elif self.timeframe == '1h':
+                limit = days_history * 24
+            elif self.timeframe == '4h':
+                limit = days_history * 6
+            elif self.timeframe == '1d':
+                limit = days_history
+            
+            # Fetch data
+            df = self.fetch_data(limit=min(limit, 1000))  # API limits
+            if df is not None:
+                logging.info(f"Collected {len(df)} data points for training")
+                return df
+            else:
+                raise ValueError("Failed to fetch training data")
+        except Exception as e:
+            logging.error(f"Error collecting training data: {e}")
+            raise
+
+    def train_on_historical(self, epochs=20):
+        """Train model on historical data"""
+        try:
+            # Fetch historical data
+            df = self.fetch_data(limit=1000)
+            if df is None:
+                raise ValueError("No data available for training")
+            
+            # Preprocess data
+            data = self.preprocess_data(df)
+            
+            # Create dataset
+            dataset = CryptoDataset(data, self.sequence_length)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+            
+            # Training loop
+            self.model.train()
+            for epoch in range(epochs):
+                total_loss = 0
+                for sequences, targets in dataloader:
+                    self.optimizer.zero_grad()
+                    outputs = self.model(sequences)
+                    loss = self.criterion(outputs, targets)
+                    loss.backward()
+                    self.optimizer.step()
+                    total_loss += loss.item()
+                
+                avg_loss = total_loss / len(dataloader)
+                logging.info(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.6f}")
+            
+            logging.info("Training completed successfully")
+            
+        except Exception as e:
+            logging.error(f"Error during training: {e}")
+            raise
+
+    def validate_model(self):
+        """Validate model performance"""
+        try:
+            # Fetch validation data
+            df = self.fetch_data(limit=500)
+            if df is None:
+                raise ValueError("No data available for validation")
+            
+            # Preprocess data
+            data = self.preprocess_data(df)
+            
+            # Create dataset
+            dataset = CryptoDataset(data, self.sequence_length)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
+            
+            # Validation
+            self.model.eval()
+            total_loss = 0
+            predictions = []
+            actuals = []
+            
+            with torch.no_grad():
+                for sequences, targets in dataloader:
+                    outputs = self.model(sequences)
+                    loss = self.criterion(outputs, targets)
+                    total_loss += loss.item()
+                    predictions.extend(outputs.numpy().flatten())
+                    actuals.extend(targets.numpy().flatten())
+            
+            avg_loss = total_loss / len(dataloader)
+            
+            # Calculate metrics
+            predictions = np.array(predictions)
+            actuals = np.array(actuals)
+            mse = np.mean((predictions - actuals) ** 2)
+            rmse = np.sqrt(mse)
+            mae = np.mean(np.abs(predictions - actuals))
+            
+            metrics = {
+                'avg_loss': avg_loss,
+                'mse': mse,
+                'rmse': rmse,
+                'mae': mae
+            }
+            
+            logging.info(f"Validation metrics: {metrics}")
+            return metrics
+            
+        except Exception as e:
+            logging.error(f"Error during validation: {e}")
+            raise
+
+    def backtest(self, start_date, end_date, initial_balance=10000):
+        """Backtest strategy on historical data"""
+        try:
+            # Fetch historical data for backtesting period
+            df = self.fetch_data(limit=1000)
+            if df is None:
+                raise ValueError("No data available for backtesting")
+            
+            # Filter by date range
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            start = pd.to_datetime(start_date)
+            end = pd.to_datetime(end_date)
+            df = df[(df['timestamp'] >= start) & (df['timestamp'] <= end)]
+            
+            if len(df) < self.sequence_length:
+                raise ValueError("Insufficient data for backtesting period")
+            
+            # Initialize backtesting variables
+            balance = initial_balance
+            position = None
+            trades = []
+            equity_curve = []
+            
+            # Preprocess data
+            data = self.preprocess_data(df)
+            
+            # Run backtest
+            for i in range(self.sequence_length, len(data)):
+                sequence = data[i-self.sequence_length:i]
+                prediction = self.predict(sequence)
+                current_price = df.iloc[i]['close']
+                
+                signal = self.generate_signals(prediction, current_price)
+                
+                if signal == 'buy' and position is None:
+                    # Enter long position
+                    position = {
+                        'entry_price': current_price,
+                        'size': balance * 0.95 / current_price,  # 95% of balance
+                        'entry_time': df.iloc[i]['timestamp']
+                    }
+                elif signal == 'sell' and position is not None:
+                    # Exit position
+                    exit_price = current_price
+                    pnl = (exit_price - position['entry_price']) * position['size']
+                    balance += pnl
+                    
+                    trades.append({
+                        'entry_price': position['entry_price'],
+                        'exit_price': exit_price,
+                        'pnl': pnl,
+                        'return': (exit_price / position['entry_price'] - 1) * 100
+                    })
+                    
+                    position = None
+                
+                # Track equity
+                current_equity = balance
+                if position is not None:
+                    current_equity += (current_price - position['entry_price']) * position['size']
+                equity_curve.append(current_equity)
+            
+            # Calculate performance metrics
+            total_returns = (balance - initial_balance) / initial_balance * 100
+            
+            if len(trades) > 0:
+                winning_trades = [t for t in trades if t['pnl'] > 0]
+                win_rate = len(winning_trades) / len(trades) * 100
+                
+                returns = [t['return'] for t in trades]
+                avg_return = np.mean(returns)
+                std_return = np.std(returns)
+                sharpe_ratio = avg_return / std_return if std_return > 0 else 0
+                
+                equity_curve = np.array(equity_curve)
+                peak = np.maximum.accumulate(equity_curve)
+                drawdown = (peak - equity_curve) / peak * 100
+                max_drawdown = np.max(drawdown)
+            else:
+                win_rate = 0
+                sharpe_ratio = 0
+                max_drawdown = 0
+            
+            results = {
+                'total_returns': total_returns,
+                'sharpe_ratio': sharpe_ratio,
+                'max_drawdown': max_drawdown,
+                'win_rate': win_rate,
+                'total_trades': len(trades),
+                'final_balance': balance
+            }
+            
+            logging.info(f"Backtest results: {results}")
+            return results
+            
+        except Exception as e:
+            logging.error(f"Error during backtesting: {e}")
+            raise
+
     def run(self):
         """Main trading loop"""
         while True:
