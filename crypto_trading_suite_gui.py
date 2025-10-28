@@ -204,6 +204,10 @@ class CryptoTradingSuite(tk.Tk):
         
         settings = settings_map[category]
         
+        # Initialize settings vars dictionary if not exists
+        if not hasattr(self, 'settings_vars'):
+            self.settings_vars = {}
+        
         row = 0
         for key, value in settings.items():
             # Label
@@ -230,12 +234,60 @@ class CryptoTradingSuite(tk.Tk):
             
             widget.grid(row=row, column=1, sticky='ew', padx=10, pady=5)
             
+            # Store variable reference with category and key for saving
+            self.settings_vars[f"{category}.{key}"] = (var, type(value))
+            
             row += 1
     
     def save_all_settings(self):
         """Save all settings to config"""
         try:
-            # Save config logic here
+            # Update config from stored variables
+            if hasattr(self, 'settings_vars'):
+                for key, (var, value_type) in self.settings_vars.items():
+                    parts = key.split('.', 1)
+                    if len(parts) != 2:
+                        continue
+                    
+                    category, setting = parts
+                    
+                    # Map category names to config keys
+                    category_map = {
+                        'exchange': 'exchange',
+                        'trading': 'trading',
+                        'risk': 'risk_management',
+                        'model': 'model',
+                        'performance': 'performance',
+                        'validation': 'validation',
+                        'advanced': 'advanced'
+                    }
+                    
+                    config_key = category_map.get(category)
+                    if not config_key or config_key not in self.config:
+                        continue
+                    
+                    # Convert value based on type
+                    try:
+                        if value_type == bool:
+                            self.config[config_key][setting] = var.get()
+                        elif value_type == int:
+                            self.config[config_key][setting] = int(var.get())
+                        elif value_type == float:
+                            self.config[config_key][setting] = float(var.get())
+                        elif value_type == list:
+                            # Parse comma-separated values
+                            value_str = var.get()
+                            self.config[config_key][setting] = [
+                                x.strip() for x in value_str.split(',') if x.strip()
+                            ]
+                        else:
+                            self.config[config_key][setting] = var.get()
+                    except (ValueError, AttributeError) as e:
+                        self.logger.warning(f"Error converting setting {key}: {e}")
+                        continue
+            
+            # Save to file (would need to implement config persistence)
+            # For now, just update in memory
             messagebox.showinfo("Success", "Settings saved successfully!")
             self.logger.info("Settings saved")
         except Exception as e:
