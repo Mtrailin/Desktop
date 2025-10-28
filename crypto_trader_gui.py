@@ -8,6 +8,7 @@ from datetime import datetime
 import logging
 from crypto_trader import CryptoTrader
 from market_data_collector import MarketDataCollector
+from performance_tracker import PerfomanceTracker
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
@@ -32,7 +33,7 @@ class CryptoTraderGUI(tk.Tk):
         self.trader = None
 
         # Initialize performance tracker with type hint
-        self.performance_tracker: Performancetracker = Performancetracker()
+        self.performance_tracker: PerfomanceTracker = PerfomanceTracker()
         self.last_update_time = datetime.now()
 
         # Load previous performance history if available
@@ -649,4 +650,5 @@ class CryptoTraderGUI(tk.Tk):
 
 if __name__ == "__main__":
     app = CryptoTraderGUI()
+    app.mainloop()
     app.mainloop()
