@@ -29,7 +29,7 @@ class ToolTip:
             x, y, _, _ = self.widget.bbox("insert")
             x += self.widget.winfo_rootx() + 25
             y += self.widget.winfo_rooty() + 25
-        except:
+        except (AttributeError, TypeError, tk.TclError):
             # Fallback for non-text widgets (buttons, labels, etc.)
             x = self.widget.winfo_rootx() + self.widget.winfo_width() // 2
             y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
@@ -712,14 +712,16 @@ class CryptoTraderGUI(tk.Tk):
                 try:
                     balance = self.trader.get_account_balance()
                     self.current_balance_var.set(f"${balance:.2f}")
-                except:
+                except Exception:
+                    # Ignore errors if trader not initialized or balance unavailable
                     pass
                     
                 # Update active trades
                 try:
                     positions = self.trader.get_open_positions()
                     self.active_trades_var.set(str(len(positions)))
-                except:
+                except Exception:
+                    # Ignore errors if trader not initialized or positions unavailable
                     pass
                     
                 # Update P&L if performance tracker is available
