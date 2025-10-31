@@ -528,52 +528,214 @@ class CryptoTraderGUI(tk.Tk):
             self.trading_status_text.config(state='disabled')
 
     def create_model_tab(self):
-        """Create model settings tab"""
+        """Create model settings tab with sliders"""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Model")
+        
+        # Main container
+        container = ttk.Frame(tab)
+        container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Model parameters
-        params = [
-            ("Hidden Size:", "hidden_size", 64),
-            ("Number of Layers:", "num_layers", 2),
-            ("Dropout Rate:", "dropout", 0.2)
-        ]
-
-        for i, (label, key, default) in enumerate(params):
-            ttk.Label(tab, text=label).grid(row=i, column=0, padx=5, pady=5)
-            var = tk.StringVar(value=str(self.config["model"].get(key, default)))
-            ttk.Entry(
-                tab,
-                textvariable=var
-            ).grid(row=i, column=1, padx=5, pady=5)
-            setattr(self, f"model_{key}_var", var)
+        # Model parameters with sliders
+        params_frame = ttk.LabelFrame(container, text=" Model Parameters ", padding=10)
+        params_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # Hidden Size slider (16 to 256)
+        ttk.Label(params_frame, text="Hidden Size:", font=('Arial', 9)).grid(row=0, column=0, padx=5, pady=10, sticky='w')
+        self.model_hidden_size_var = tk.IntVar(value=self.config["model"].get("hidden_size", 64))
+        hidden_slider = ttk.Scale(
+            params_frame,
+            from_=16,
+            to=256,
+            orient=tk.HORIZONTAL,
+            variable=self.model_hidden_size_var,
+            command=lambda v: self.update_slider_label(self.hidden_value_label, v)
+        )
+        hidden_slider.grid(row=0, column=1, padx=5, pady=10, sticky='ew')
+        self.hidden_value_label = ttk.Label(params_frame, text=str(self.model_hidden_size_var.get()))
+        self.hidden_value_label.grid(row=0, column=2, padx=5, pady=10)
+        ToolTip(hidden_slider, "Number of hidden units in each LSTM layer (16-256)")
+        
+        # Number of Layers slider (1 to 5)
+        ttk.Label(params_frame, text="Number of Layers:", font=('Arial', 9)).grid(row=1, column=0, padx=5, pady=10, sticky='w')
+        self.model_num_layers_var = tk.IntVar(value=self.config["model"].get("num_layers", 2))
+        layers_slider = ttk.Scale(
+            params_frame,
+            from_=1,
+            to=5,
+            orient=tk.HORIZONTAL,
+            variable=self.model_num_layers_var,
+            command=lambda v: self.update_slider_label(self.layers_value_label, v)
+        )
+        layers_slider.grid(row=1, column=1, padx=5, pady=10, sticky='ew')
+        self.layers_value_label = ttk.Label(params_frame, text=str(self.model_num_layers_var.get()))
+        self.layers_value_label.grid(row=1, column=2, padx=5, pady=10)
+        ToolTip(layers_slider, "Number of LSTM layers in the model (1-5)")
+        
+        # Dropout Rate slider (0.0 to 0.5)
+        ttk.Label(params_frame, text="Dropout Rate:", font=('Arial', 9)).grid(row=2, column=0, padx=5, pady=10, sticky='w')
+        self.model_dropout_var = tk.DoubleVar(value=self.config["model"].get("dropout", 0.2))
+        dropout_slider = ttk.Scale(
+            params_frame,
+            from_=0.0,
+            to=0.5,
+            orient=tk.HORIZONTAL,
+            variable=self.model_dropout_var,
+            command=lambda v: self.update_slider_label(self.dropout_value_label, v, decimals=2)
+        )
+        dropout_slider.grid(row=2, column=1, padx=5, pady=10, sticky='ew')
+        self.dropout_value_label = ttk.Label(params_frame, text=f"{self.model_dropout_var.get():.2f}")
+        self.dropout_value_label.grid(row=2, column=2, padx=5, pady=10)
+        ToolTip(dropout_slider, "Dropout rate for regularization (0.0-0.5, prevents overfitting)")
+        
+        # Configure grid
+        params_frame.grid_columnconfigure(1, weight=1)
 
         # Model controls
-        ttk.Button(
-            tab,
-            text="Save Model",
+        button_frame = ttk.Frame(container)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        save_btn = ttk.Button(
+            button_frame,
+            text="💾 Save Model Settings",
             command=self.save_model
-        ).grid(row=len(params)+1, column=0, pady=20)
+        )
+        save_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(save_btn, "Save current model configuration")
 
-        ttk.Button(
-            tab,
-            text="Load Model",
+        load_btn = ttk.Button(
+            button_frame,
+            text="📂 Load Model",
             command=self.load_model
-        ).grid(row=len(params)+1, column=1, pady=20)
+        )
+        load_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(load_btn, "Load a previously saved model")
+        
+        # Model info
+        info_frame = ttk.LabelFrame(container, text=" Model Information ", padding=10)
+        info_frame.pack(fill=tk.BOTH, expand=True)
+        
+        info_text = tk.Text(info_frame, height=8, wrap=tk.WORD, state='disabled', bg='#f0f0f0')
+        info_text.pack(fill=tk.BOTH, expand=True)
+        info_text.config(state='normal')
+        info_text.insert('1.0', "💡 Model Configuration Tips:\n\n" +
+                        "• Hidden Size: Larger values = more complex patterns but slower training\n" +
+                        "• Layers: More layers = deeper learning but risk of overfitting\n" +
+                        "• Dropout: Higher values = more regularization, prevents overfitting\n" +
+                        "• Recommended: Start with defaults and adjust based on performance")
+        info_text.config(state='disabled')
+        
+    def update_slider_label(self, label, value, decimals=0):
+        """Update slider value label"""
+        if decimals > 0:
+            label.config(text=f"{float(value):.{decimals}f}")
+        else:
+            label.config(text=str(int(float(value))))
 
     def create_monitor_tab(self):
-        """Create monitoring tab"""
+        """Create enhanced monitoring tab"""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Monitor")
+        
+        # Create paned window for split view
+        paned = ttk.PanedWindow(tab, orient=tk.VERTICAL)
+        paned.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        # Top section - Real-time metrics
+        metrics_frame = ttk.LabelFrame(paned, text=" Real-Time Metrics ", padding=10)
+        paned.add(metrics_frame, weight=1)
+        
+        # Create metrics display
+        metrics_grid = ttk.Frame(metrics_frame)
+        metrics_grid.pack(fill=tk.BOTH, expand=True)
+        
+        # System status
+        ttk.Label(metrics_grid, text="System Status:", font=('Arial', 10, 'bold')).grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.system_status_var = tk.StringVar(value="Idle")
+        ttk.Label(metrics_grid, textvariable=self.system_status_var, foreground='blue').grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        
+        # Active trades
+        ttk.Label(metrics_grid, text="Active Trades:", font=('Arial', 10, 'bold')).grid(row=0, column=2, padx=5, pady=5, sticky='w')
+        self.active_trades_var = tk.StringVar(value="0")
+        ttk.Label(metrics_grid, textvariable=self.active_trades_var).grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        
+        # Current balance
+        ttk.Label(metrics_grid, text="Current Balance:", font=('Arial', 10, 'bold')).grid(row=1, column=0, padx=5, pady=5, sticky='w')
+        self.current_balance_var = tk.StringVar(value="$0.00")
+        ttk.Label(metrics_grid, textvariable=self.current_balance_var, foreground='green').grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        
+        # Total P&L
+        ttk.Label(metrics_grid, text="Total P&L:", font=('Arial', 10, 'bold')).grid(row=1, column=2, padx=5, pady=5, sticky='w')
+        self.monitor_pnl_var = tk.StringVar(value="$0.00")
+        ttk.Label(metrics_grid, textvariable=self.monitor_pnl_var, foreground='green').grid(row=1, column=3, padx=5, pady=5, sticky='w')
+        
+        # Last update time
+        ttk.Label(metrics_grid, text="Last Update:", font=('Arial', 10, 'bold')).grid(row=2, column=0, padx=5, pady=5, sticky='w')
+        self.last_update_var = tk.StringVar(value="Never")
+        ttk.Label(metrics_grid, textvariable=self.last_update_var).grid(row=2, column=1, padx=5, pady=5, sticky='w')
+        
+        # Refresh button
+        refresh_btn = ttk.Button(metrics_grid, text="🔄 Refresh", command=self.refresh_monitor_metrics)
+        refresh_btn.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+        ToolTip(refresh_btn, "Manually refresh monitoring metrics")
 
+        # Bottom section - Activity log
+        log_frame = ttk.LabelFrame(paned, text=" Activity Log ", padding=5)
+        paned.add(log_frame, weight=2)
+        
         # Log viewer
-        self.log_text = scrolledtext.ScrolledText(tab, height=20)
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.log_text = scrolledtext.ScrolledText(log_frame, height=15, wrap=tk.WORD)
+        self.log_text.pack(fill=tk.BOTH, expand=True)
 
         # Add handler to display logs in GUI
         gui_handler = logging.StreamHandler(self.LogTextHandler(self.log_text))
         gui_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
         self.logger.addHandler(gui_handler)
+        
+        # Log initial message
+        self.logger.info("Monitoring system initialized")
+        
+    def refresh_monitor_metrics(self):
+        """Refresh monitoring metrics display"""
+        try:
+            if self.trader:
+                # Update system status
+                if hasattr(self.trader, 'train_mode'):
+                    if self.trader.train_mode:
+                        self.system_status_var.set("Training Mode")
+                    else:
+                        self.system_status_var.set("Live Trading")
+                else:
+                    self.system_status_var.set("Ready")
+                
+                # Update balance if available
+                try:
+                    balance = self.trader.get_account_balance()
+                    self.current_balance_var.set(f"${balance:.2f}")
+                except:
+                    pass
+                    
+                # Update active trades
+                try:
+                    positions = self.trader.get_open_positions()
+                    self.active_trades_var.set(str(len(positions)))
+                except:
+                    pass
+                    
+                # Update P&L if performance tracker is available
+                if hasattr(self, 'performance_tracker'):
+                    metrics = self.performance_tracker.get_performance_metrics()
+                    self.monitor_pnl_var.set(f"${metrics.get('total_pnl', 0.0):.2f}")
+            else:
+                self.system_status_var.set("Idle - No trader initialized")
+            
+            # Update timestamp
+            self.last_update_var.set(datetime.now().strftime("%H:%M:%S"))
+            self.logger.info("Metrics refreshed")
+            
+        except Exception as e:
+            self.logger.error(f"Error refreshing metrics: {e}")
+            self.system_status_var.set("Error")
 
     def create_performance_tab(self):
         """Create performance tracking tab"""
