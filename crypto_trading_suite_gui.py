@@ -34,9 +34,15 @@ class ToolTip:
         self.widget.bind("<Leave>", self.hide_tooltip)
     
     def show_tooltip(self, event=None):
-        x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 25
+        try:
+            # Try to get position from bbox first (for text widgets)
+            x, y, _, _ = self.widget.bbox("insert")
+            x += self.widget.winfo_rootx() + 25
+            y += self.widget.winfo_rooty() + 25
+        except:
+            # Fallback for non-text widgets (buttons, labels, etc.)
+            x = self.widget.winfo_rootx() + self.widget.winfo_width() // 2
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
         
         self.tooltip_window = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
@@ -59,6 +65,9 @@ class CryptoTradingSuite(tk.Tk):
         self.title("Crypto Trading Suite - Professional Edition")
         self.geometry("1200x800")
         self.minsize(1000, 600)  # Set minimum window size
+        
+        # Timer ID for cleanup
+        self.time_update_id = None
 
         # Initialize components
         self.config = load_config()
@@ -172,7 +181,14 @@ class CryptoTradingSuite(tk.Tk):
         """Update the time display"""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.time_var.set(current_time)
-        self.after(1000, self.update_time)
+        # Schedule next update and store ID for cleanup
+        self.time_update_id = self.after(1000, self.update_time)
+        
+    def destroy(self):
+        """Clean up timer when window is destroyed"""
+        if self.time_update_id:
+            self.after_cancel(self.time_update_id)
+        super().destroy()
 
     def setup_trading_components(self):
         """Initialize trading components"""

@@ -24,9 +24,15 @@ class ToolTip:
         self.widget.bind("<Leave>", self.hide_tooltip)
     
     def show_tooltip(self, event=None):
-        x, y, _, _ = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 25
+        try:
+            # Try to get position from bbox first (for text widgets)
+            x, y, _, _ = self.widget.bbox("insert")
+            x += self.widget.winfo_rootx() + 25
+            y += self.widget.winfo_rooty() + 25
+        except:
+            # Fallback for non-text widgets (buttons, labels, etc.)
+            x = self.widget.winfo_rootx() + self.widget.winfo_width() // 2
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
         
         self.tooltip_window = tw = tk.Toplevel(self.widget)
         tw.wm_overrideredirect(True)
@@ -42,6 +48,12 @@ class ToolTip:
             self.tooltip_window.destroy()
             self.tooltip_window = None
 class CryptoTraderGUI(tk.Tk):
+    # Constants for validation ranges
+    MIN_HISTORY_DAYS = 1
+    MAX_HISTORY_DAYS = 365
+    MIN_EPOCHS = 1
+    MAX_EPOCHS = 1000
+    
     def __init__(self):
         super().__init__()
 
@@ -50,6 +62,9 @@ class CryptoTraderGUI(tk.Tk):
         
         # Set minimum window size for better usability
         self.minsize(1000, 600)
+        
+        # Timer ID for cleanup
+        self.time_update_id = None
 
         # Initialize configuration
         self.config = self.load_config()
@@ -1106,7 +1121,14 @@ class CryptoTraderGUI(tk.Tk):
         """Update the time display in status bar"""
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.time_var.set(current_time)
-        self.after(1000, self.update_time)
+        # Schedule next update and store ID for cleanup
+        self.time_update_id = self.after(1000, self.update_time)
+        
+    def destroy(self):
+        """Clean up timer when window is destroyed"""
+        if self.time_update_id:
+            self.after_cancel(self.time_update_id)
+        super().destroy()
 
     # Event handlers
     def save_exchange_settings(self):
@@ -1164,9 +1186,9 @@ class CryptoTraderGUI(tk.Tk):
             # Validate inputs
             try:
                 days = int(self.train_days_history_var.get())
-                if days < 1 or days > 365:
+                if days < self.MIN_HISTORY_DAYS or days > self.MAX_HISTORY_DAYS:
                     messagebox.showwarning("Invalid Input", 
-                        "Historical days must be between 1 and 365.\n\n"
+                        f"Historical days must be between {self.MIN_HISTORY_DAYS} and {self.MAX_HISTORY_DAYS}.\n\n"
                         "Recommended: 30-90 days for balanced training.")
                     return
             except ValueError:
@@ -1227,9 +1249,9 @@ class CryptoTraderGUI(tk.Tk):
             # Validate training parameters
             try:
                 epochs = int(self.train_epochs_var.get())
-                if epochs < 1 or epochs > 1000:
+                if epochs < self.MIN_EPOCHS or epochs > self.MAX_EPOCHS:
                     messagebox.showwarning("Invalid Input", 
-                        "Epochs must be between 1 and 1000.\n\n"
+                        f"Epochs must be between {self.MIN_EPOCHS} and {self.MAX_EPOCHS}.\n\n"
                         "Recommended: 10-50 epochs for most cases.")
                     return
             except ValueError:
