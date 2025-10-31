@@ -12,12 +12,44 @@ from performance_tracker import PerformanceTracker
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+
+# Tooltip class for user-friendly help
+class ToolTip:
+    """Create a tooltip for a given widget"""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+    
+    def show_tooltip(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        self.tooltip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        label = tk.Label(tw, text=self.text, justify='left',
+                        background="#ffffe0", relief='solid', borderwidth=1,
+                        font=("Arial", 9, "normal"))
+        label.pack(ipadx=1)
+    
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
 class CryptoTraderGUI(tk.Tk):
     def __init__(self):
         super().__init__()
 
         self.title("Crypto Trader Control Panel")
         self.geometry("1200x800")
+        
+        # Set minimum window size for better usability
+        self.minsize(1000, 600)
 
         # Initialize configuration
         self.config = self.load_config()
@@ -26,6 +58,7 @@ class CryptoTraderGUI(tk.Tk):
         self.setup_logging()
 
         # Build UI
+        self.create_menu_bar()
         self.create_notebook()
         self.create_status_bar()
 
@@ -110,6 +143,95 @@ class CryptoTraderGUI(tk.Tk):
         ))
         self.logger.addHandler(fh)
 
+    def create_menu_bar(self):
+        """Create menu bar with help and options"""
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+        
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Save Configuration", command=self.save_config, accelerator="Ctrl+S")
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.quit, accelerator="Ctrl+Q")
+        
+        # Help menu
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="Keyboard Shortcuts", command=self.show_shortcuts)
+        help_menu.add_command(label="Quick Start Guide", command=self.show_quick_start)
+        help_menu.add_separator()
+        help_menu.add_command(label="About", command=self.show_about)
+        
+        # Bind keyboard shortcuts
+        self.bind('<Control-q>', lambda e: self.quit())
+        
+    def show_shortcuts(self):
+        """Show keyboard shortcuts dialog"""
+        shortcuts_text = """
+        Keyboard Shortcuts:
+        
+        Ctrl+S    - Save Exchange Settings
+        Ctrl+Q    - Quit Application
+        
+        Tips:
+        • Hover over any control to see helpful tooltips
+        • Use Ctrl+Click to select multiple items in lists
+        • Watch the status bar for real-time updates
+        """
+        messagebox.showinfo("Keyboard Shortcuts", shortcuts_text)
+        
+    def show_quick_start(self):
+        """Show quick start guide"""
+        guide_text = """
+        Quick Start Guide:
+        
+        1. Exchange Tab:
+           • Select your exchange
+           • Enter API credentials
+           • Choose trading pairs and timeframes
+           • Click Save
+        
+        2. Training Tab:
+           • Click 'Start Data Collection' first
+           • Wait for data to download
+           • Click 'Start Training'
+           • Monitor progress in Monitor tab
+        
+        3. Trading Tab:
+           • Set your risk parameters
+           • Review settings carefully
+           • Click 'Start Live Trading'
+           • Confirm twice (safety feature)
+        
+        4. Performance Tab:
+           • View real-time metrics
+           • Monitor P&L and statistics
+           • Track trading performance
+        
+        ⚠️ Always test in training mode first!
+        """
+        messagebox.showinfo("Quick Start Guide", guide_text)
+        
+    def show_about(self):
+        """Show about dialog"""
+        about_text = """
+        Crypto Trader Control Panel
+        
+        A professional cryptocurrency trading system
+        with AI-powered predictions and risk management.
+        
+        Features:
+        • Multiple exchange support
+        • LSTM-based price prediction
+        • Advanced risk management
+        • Real-time performance tracking
+        • Comprehensive training tools
+        
+        Version: 1.0
+        """
+        messagebox.showinfo("About", about_text)
+
     def create_notebook(self):
         """Create main notebook with tabs"""
         self.notebook = ttk.Notebook(self)
@@ -130,132 +252,265 @@ class CryptoTraderGUI(tk.Tk):
         self.notebook.add(tab, text="Exchange")
 
         # Exchange selection
-        ttk.Label(tab, text="Exchange:").grid(row=0, column=0, padx=5, pady=5)
+        ttk.Label(tab, text="Exchange:", font=('Arial', 10, 'bold')).grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.exchange_var = tk.StringVar(value=self.config["exchange"]["id"])
-        ttk.Combobox(
+        exchange_combo = ttk.Combobox(
             tab,
             textvariable=self.exchange_var,
-            values=["binance", "coinbase", "kucoin", "bybit", "mexc", "gate", "huobi"]
-        ).grid(row=0, column=1, padx=5, pady=5)
+            values=["binance", "coinbase", "kucoin", "bybit", "mexc", "gate", "huobi"],
+            state="readonly"
+        )
+        exchange_combo.grid(row=0, column=1, padx=5, pady=5, sticky='ew')
+        ToolTip(exchange_combo, "Select the cryptocurrency exchange to connect to")
 
-        # API Credentials
-        ttk.Label(tab, text="API Key:").grid(row=1, column=0, padx=5, pady=5)
+        # API Credentials Frame
+        cred_frame = ttk.LabelFrame(tab, text=" API Credentials ", padding=10)
+        cred_frame.grid(row=1, column=0, columnspan=2, padx=5, pady=10, sticky='ew')
+        
+        ttk.Label(cred_frame, text="API Key:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.api_key_var = tk.StringVar(value=self.config["exchange"]["api_key"])
-        ttk.Entry(
-            tab,
+        api_key_entry = ttk.Entry(
+            cred_frame,
             textvariable=self.api_key_var,
             width=50,
             show="*"
-        ).grid(row=1, column=1, padx=5, pady=5)
+        )
+        api_key_entry.grid(row=0, column=1, padx=5, pady=5)
+        ToolTip(api_key_entry, "Your exchange API key (stored securely)")
+        
+        # Show/Hide API Key button
+        self.show_api_key = tk.BooleanVar(value=False)
+        def toggle_api_key():
+            api_key_entry.config(show="" if self.show_api_key.get() else "*")
+        ttk.Checkbutton(cred_frame, text="Show", variable=self.show_api_key, command=toggle_api_key).grid(row=0, column=2, padx=5)
 
-        ttk.Label(tab, text="Secret Key:").grid(row=2, column=0, padx=5, pady=5)
+        ttk.Label(cred_frame, text="Secret Key:").grid(row=1, column=0, padx=5, pady=5, sticky='w')
         self.secret_key_var = tk.StringVar(value=self.config["exchange"]["secret_key"])
-        ttk.Entry(
-            tab,
+        secret_key_entry = ttk.Entry(
+            cred_frame,
             textvariable=self.secret_key_var,
             width=50,
             show="*"
-        ).grid(row=2, column=1, padx=5, pady=5)
+        )
+        secret_key_entry.grid(row=1, column=1, padx=5, pady=5)
+        ToolTip(secret_key_entry, "Your exchange secret key (stored securely)")
+        
+        # Show/Hide Secret Key button
+        self.show_secret_key = tk.BooleanVar(value=False)
+        def toggle_secret_key():
+            secret_key_entry.config(show="" if self.show_secret_key.get() else "*")
+        ttk.Checkbutton(cred_frame, text="Show", variable=self.show_secret_key, command=toggle_secret_key).grid(row=1, column=2, padx=5)
 
-        # Trading pairs
-        ttk.Label(tab, text="Trading Pairs:").grid(row=3, column=0, padx=5, pady=5)
-        self.pairs_listbox = tk.Listbox(tab, selectmode=tk.MULTIPLE, height=6)
-        self.pairs_listbox.grid(row=3, column=1, padx=5, pady=5)
+        # Trading pairs Frame
+        pairs_frame = ttk.LabelFrame(tab, text=" Trading Pairs ", padding=10)
+        pairs_frame.grid(row=2, column=0, columnspan=2, padx=5, pady=10, sticky='nsew')
+        
+        ttk.Label(pairs_frame, text="Select trading pairs (Ctrl+Click for multiple):").pack(anchor='w', padx=5, pady=5)
+        
+        # Add scrollbar to listbox
+        pairs_scroll_frame = ttk.Frame(pairs_frame)
+        pairs_scroll_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        pairs_scrollbar = ttk.Scrollbar(pairs_scroll_frame)
+        pairs_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.pairs_listbox = tk.Listbox(pairs_scroll_frame, selectmode=tk.MULTIPLE, height=6, yscrollcommand=pairs_scrollbar.set)
+        self.pairs_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        pairs_scrollbar.config(command=self.pairs_listbox.yview)
+        
         for symbol in self.config["exchange"]["symbols"]:
             self.pairs_listbox.insert(tk.END, symbol)
+        ToolTip(self.pairs_listbox, "Select one or more trading pairs to monitor")
 
-        # Timeframes
-        ttk.Label(tab, text="Timeframes:").grid(row=4, column=0, padx=5, pady=5)
-        self.timeframes_listbox = tk.Listbox(tab, selectmode=tk.MULTIPLE, height=6)
-        self.timeframes_listbox.grid(row=4, column=1, padx=5, pady=5)
+        # Timeframes Frame
+        tf_frame = ttk.LabelFrame(tab, text=" Timeframes ", padding=10)
+        tf_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=10, sticky='ew')
+        
+        ttk.Label(tf_frame, text="Select timeframes (Ctrl+Click for multiple):").pack(anchor='w', padx=5, pady=5)
+        self.timeframes_listbox = tk.Listbox(tf_frame, selectmode=tk.MULTIPLE, height=6)
+        self.timeframes_listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         for tf in self.config["exchange"]["timeframes"]:
             self.timeframes_listbox.insert(tk.END, tf)
+        ToolTip(self.timeframes_listbox, "Select timeframe intervals for analysis")
 
-        # Save button
-        ttk.Button(
+        # Save button with color
+        save_btn = ttk.Button(
             tab,
-            text="Save Exchange Settings",
+            text="💾 Save Exchange Settings",
             command=self.save_exchange_settings
-        ).grid(row=5, column=0, columnspan=2, pady=20)
+        )
+        save_btn.grid(row=4, column=0, columnspan=2, pady=20)
+        ToolTip(save_btn, "Save your exchange configuration (Ctrl+S)")
+        
+        # Configure grid weights for responsiveness
+        tab.grid_columnconfigure(1, weight=1)
+        tab.grid_rowconfigure(2, weight=1)
+        
+        # Bind keyboard shortcut
+        self.bind('<Control-s>', lambda e: self.save_exchange_settings())
 
     def create_training_tab(self):
         """Create training settings tab"""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Training")
+        
+        # Main container frame
+        container = ttk.Frame(tab)
+        container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # Training mode
+        # Training mode with better visual
+        mode_frame = ttk.LabelFrame(container, text=" Training Mode ", padding=10)
+        mode_frame.pack(fill=tk.X, pady=(0, 10))
+        
         self.train_mode_var = tk.BooleanVar(value=self.config["training"]["mode"])
-        ttk.Checkbutton(
-            tab,
-            text="Training Mode",
+        mode_check = ttk.Checkbutton(
+            mode_frame,
+            text="Enable Training Mode (Safe - No Real Trading)",
             variable=self.train_mode_var
-        ).grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        )
+        mode_check.pack(anchor='w', padx=5, pady=5)
+        ToolTip(mode_check, "When enabled, the system will train on historical data without placing real trades")
 
-        # Training parameters
+        # Training parameters in organized frame
+        params_frame = ttk.LabelFrame(container, text=" Training Parameters ", padding=10)
+        params_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
         params = [
-            ("Historical Days:", "days_history", 30),
-            ("Epochs:", "epochs", 20),
-            ("Batch Size:", "batch_size", 32),
-            ("Learning Rate:", "learning_rate", 0.001),
-            ("Sequence Length:", "sequence_length", 60)
+            ("Historical Days:", "days_history", 30, "Number of days of historical data to use for training"),
+            ("Epochs:", "epochs", 20, "Number of complete passes through the training dataset"),
+            ("Batch Size:", "batch_size", 32, "Number of samples processed before model update"),
+            ("Learning Rate:", "learning_rate", 0.001, "Step size for model weight updates (0.0001-0.01)"),
+            ("Sequence Length:", "sequence_length", 60, "Number of time steps used for prediction")
         ]
 
-        for i, (label, key, default) in enumerate(params, start=1):
-            ttk.Label(tab, text=label).grid(row=i, column=0, padx=5, pady=5)
+        for i, (label, key, default, tooltip) in enumerate(params):
+            ttk.Label(params_frame, text=label, font=('Arial', 9)).grid(row=i, column=0, padx=5, pady=5, sticky='w')
             var = tk.StringVar(value=str(self.config["training"].get(key, default)))
-            ttk.Entry(
-                tab,
-                textvariable=var
-            ).grid(row=i, column=1, padx=5, pady=5)
+            entry = ttk.Entry(params_frame, textvariable=var, width=15)
+            entry.grid(row=i, column=1, padx=5, pady=5, sticky='w')
             setattr(self, f"train_{key}_var", var)
+            ToolTip(entry, tooltip)
 
-        # Control buttons
-        ttk.Button(
-            tab,
-            text="Start Data Collection",
+        # Control buttons with icons and better layout
+        button_frame = ttk.Frame(container)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        collect_btn = ttk.Button(
+            button_frame,
+            text="📊 Start Data Collection",
             command=self.start_data_collection
-        ).grid(row=len(params)+1, column=0, pady=20)
+        )
+        collect_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(collect_btn, "Collect historical market data for training")
 
-        ttk.Button(
-            tab,
-            text="Start Training",
+        train_btn = ttk.Button(
+            button_frame,
+            text="🎓 Start Training",
             command=self.start_training
-        ).grid(row=len(params)+1, column=1, pady=20)
+        )
+        train_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(train_btn, "Train the model on collected data")
+        
+        # Progress information
+        info_frame = ttk.LabelFrame(container, text=" Training Information ", padding=10)
+        info_frame.pack(fill=tk.BOTH, expand=True)
+        
+        info_text = tk.Text(info_frame, height=6, wrap=tk.WORD, state='disabled', bg='#f0f0f0')
+        info_text.pack(fill=tk.BOTH, expand=True)
+        info_text.config(state='normal')
+        info_text.insert('1.0', "💡 Training Tips:\n\n" +
+                        "• Start with data collection to gather historical market data\n" +
+                        "• More epochs generally improve accuracy but take longer\n" +
+                        "• Lower learning rates are more stable but slower\n" +
+                        "• Monitor training progress in the Monitor tab")
+        info_text.config(state='disabled')
 
     def create_trading_tab(self):
         """Create trading settings tab"""
         tab = ttk.Frame(self.notebook)
         self.notebook.add(tab, text="Trading")
+        
+        # Main container
+        container = ttk.Frame(tab)
+        container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Warning banner
+        warning_frame = ttk.Frame(container)
+        warning_frame.pack(fill=tk.X, pady=(0, 10))
+        warning_label = ttk.Label(
+            warning_frame, 
+            text="⚠️  WARNING: Live trading uses real money. Start with small amounts and test thoroughly.",
+            foreground='red',
+            font=('Arial', 10, 'bold')
+        )
+        warning_label.pack()
 
-        # Trading parameters
+        # Trading parameters in organized frame
+        params_frame = ttk.LabelFrame(container, text=" Risk Management Parameters ", padding=10)
+        params_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
         params = [
-            ("Risk Per Trade (%):", "risk_per_trade", 2.0),
-            ("Stop Loss (%):", "stop_loss", 2.0),
-            ("Take Profit (%):", "take_profit", 3.0),
-            ("Leverage:", "leverage", 1)
+            ("Risk Per Trade (%):", "risk_per_trade", 2.0, "Maximum percentage of capital to risk per trade (1-5% recommended)"),
+            ("Stop Loss (%):", "stop_loss", 2.0, "Automatic sell trigger to limit losses (1-5% typical)"),
+            ("Take Profit (%):", "take_profit", 3.0, "Automatic sell trigger to lock in profits (2-10% typical)"),
+            ("Leverage:", "leverage", 1, "Trading leverage multiplier (1 = no leverage, RISKY if > 1)")
         ]
 
-        for i, (label, key, default) in enumerate(params):
-            ttk.Label(tab, text=label).grid(row=i, column=0, padx=5, pady=5)
+        for i, (label, key, default, tooltip) in enumerate(params):
+            ttk.Label(params_frame, text=label, font=('Arial', 9)).grid(row=i, column=0, padx=5, pady=5, sticky='w')
             var = tk.StringVar(value=str(self.config["trading"].get(key, default)))
-            ttk.Entry(
-                tab,
-                textvariable=var
-            ).grid(row=i, column=1, padx=5, pady=5)
+            entry = ttk.Entry(params_frame, textvariable=var, width=15)
+            entry.grid(row=i, column=1, padx=5, pady=5, sticky='w')
             setattr(self, f"trade_{key}_var", var)
+            ToolTip(entry, tooltip)
+            
+            # Add validation indicator
+            ttk.Label(params_frame, text="✓", foreground='green', font=('Arial', 12)).grid(row=i, column=2, padx=5)
 
-        # Control buttons
-        ttk.Button(
-            tab,
-            text="Start Live Trading",
+        # Control buttons with better styling
+        button_frame = ttk.Frame(container)
+        button_frame.pack(fill=tk.X, pady=10)
+        
+        # Start button (green-ish)
+        start_btn_frame = ttk.Frame(button_frame)
+        start_btn_frame.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
+        
+        start_btn = ttk.Button(
+            start_btn_frame,
+            text="▶️  Start Live Trading",
             command=self.start_live_trading
-        ).grid(row=len(params)+1, column=0, pady=20)
-
-        ttk.Button(
-            tab,
-            text="Stop Trading",
+        )
+        start_btn.pack(fill=tk.X)
+        ToolTip(start_btn, "Begin live trading with real money - Double confirmation required")
+        
+        # Stop button (red-ish)
+        stop_btn_frame = ttk.Frame(button_frame)
+        stop_btn_frame.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5)
+        
+        stop_btn = ttk.Button(
+            stop_btn_frame,
+            text="⏹️  Stop Trading",
             command=self.stop_trading
-        ).grid(row=len(params)+1, column=1, pady=20)
+        )
+        stop_btn.pack(fill=tk.X)
+        ToolTip(stop_btn, "Stop all trading activity immediately")
+        
+        # Trading status display
+        status_frame = ttk.LabelFrame(container, text=" Trading Status ", padding=10)
+        status_frame.pack(fill=tk.BOTH, expand=True)
+        
+        self.trading_status_text = tk.Text(status_frame, height=8, wrap=tk.WORD, state='disabled', bg='#f0f0f0')
+        self.trading_status_text.pack(fill=tk.BOTH, expand=True)
+        self.update_trading_status("No active trading session")
+        
+    def update_trading_status(self, message):
+        """Update the trading status display"""
+        if hasattr(self, 'trading_status_text'):
+            self.trading_status_text.config(state='normal')
+            self.trading_status_text.delete('1.0', tk.END)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.trading_status_text.insert('1.0', f"[{timestamp}] {message}")
+            self.trading_status_text.config(state='disabled')
 
     def create_model_tab(self):
         """Create model settings tab"""
@@ -819,21 +1074,63 @@ class CryptoTraderGUI(tk.Tk):
                 messagebox.showerror("Error", f"Failed to reset settings: {e}")
 
     def create_status_bar(self):
-        """Create status bar"""
+        """Create enhanced status bar with color coding"""
+        status_frame = ttk.Frame(self)
+        status_frame.pack(fill=tk.X, side=tk.BOTTOM, padx=5, pady=2)
+        
         self.status_var = tk.StringVar()
         self.status_bar = ttk.Label(
-            self,
+            status_frame,
             textvariable=self.status_var,
             relief=tk.SUNKEN,
-            anchor=tk.W
+            anchor=tk.W,
+            font=('Arial', 9)
         )
-        self.status_bar.pack(fill=tk.X, side=tk.BOTTOM, padx=5)
-        self.status_var.set("Ready")
+        self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Add timestamp label
+        self.time_var = tk.StringVar()
+        time_label = ttk.Label(
+            status_frame,
+            textvariable=self.time_var,
+            relief=tk.SUNKEN,
+            anchor=tk.E,
+            font=('Arial', 9)
+        )
+        time_label.pack(side=tk.RIGHT, padx=5)
+        
+        self.status_var.set("✓ Ready - Welcome to Crypto Trader Control Panel")
+        self.update_time()
+        
+    def update_time(self):
+        """Update the time display in status bar"""
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.time_var.set(current_time)
+        self.after(1000, self.update_time)
 
     # Event handlers
     def save_exchange_settings(self):
-        """Save exchange settings"""
+        """Save exchange settings with validation"""
         try:
+            # Validate inputs
+            if not self.api_key_var.get().strip():
+                messagebox.showwarning("Validation Error", "API Key is required. Please enter your exchange API key.")
+                return
+                
+            if not self.secret_key_var.get().strip():
+                messagebox.showwarning("Validation Error", "Secret Key is required. Please enter your exchange secret key.")
+                return
+            
+            # Check if at least one pair is selected
+            if not self.pairs_listbox.curselection():
+                messagebox.showwarning("Validation Error", "Please select at least one trading pair.")
+                return
+                
+            # Check if at least one timeframe is selected
+            if not self.timeframes_listbox.curselection():
+                messagebox.showwarning("Validation Error", "Please select at least one timeframe.")
+                return
+            
             self.config["exchange"]["id"] = self.exchange_var.get()
             self.config["exchange"]["api_key"] = self.api_key_var.get()
             self.config["exchange"]["secret_key"] = self.secret_key_var.get()
@@ -845,23 +1142,58 @@ class CryptoTraderGUI(tk.Tk):
             ]
 
             self.save_config()
-            self.logger.info("Exchange settings saved")
-            messagebox.showinfo("Success", "Exchange settings saved successfully")
+            self.logger.info("Exchange settings saved successfully")
+            self.status_var.set("✓ Exchange settings saved successfully")
+            messagebox.showinfo("Success", 
+                f"Exchange settings saved successfully!\n\n"
+                f"Exchange: {self.exchange_var.get()}\n"
+                f"Trading Pairs: {len(self.config['exchange']['symbols'])}\n"
+                f"Timeframes: {len(self.config['exchange']['timeframes'])}")
 
         except Exception as e:
             self.logger.error(f"Error saving exchange settings: {e}")
-            messagebox.showerror("Error", f"Failed to save settings: {e}")
+            messagebox.showerror("Error", 
+                f"Failed to save settings.\n\n"
+                f"Error: {str(e)}\n\n"
+                f"Please check your inputs and try again.")
+            self.status_var.set("✗ Error saving exchange settings")
 
     def start_data_collection(self):
         """Start historical data collection"""
         try:
-            days = int(self.train_days_history_var.get())
+            # Validate inputs
+            try:
+                days = int(self.train_days_history_var.get())
+                if days < 1 or days > 365:
+                    messagebox.showwarning("Invalid Input", 
+                        "Historical days must be between 1 and 365.\n\n"
+                        "Recommended: 30-90 days for balanced training.")
+                    return
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter a valid number for historical days.")
+                return
+            
             symbols = [
                 self.pairs_listbox.get(i) for i in self.pairs_listbox.curselection()
             ]
+            if not symbols:
+                messagebox.showwarning("No Selection", "Please select at least one trading pair from the Exchange tab.")
+                return
+                
             timeframes = [
                 self.timeframes_listbox.get(i) for i in self.timeframes_listbox.curselection()
             ]
+            if not timeframes:
+                messagebox.showwarning("No Selection", "Please select at least one timeframe from the Exchange tab.")
+                return
+
+            # Confirm action
+            if not messagebox.askyesno("Confirm Data Collection",
+                f"This will collect {days} days of historical data for:\n\n"
+                f"• {len(symbols)} trading pair(s)\n"
+                f"• {len(timeframes)} timeframe(s)\n\n"
+                f"This may take several minutes. Continue?"):
+                return
 
             collector = MarketDataCollector(
                 exchange_id=self.exchange_var.get(),
@@ -869,21 +1201,58 @@ class CryptoTraderGUI(tk.Tk):
                 timeframes=timeframes
             )
 
-            self.status_var.set("Collecting historical data...")
+            self.status_var.set(f"📊 Collecting {days} days of historical data...")
+            self.update_idletasks()  # Update UI immediately
+            
             collector.collect_all_markets(days_history=days)
 
             self.logger.info("Historical data collection completed")
-            messagebox.showinfo("Success", "Data collection completed successfully")
-            self.status_var.set("Ready")
+            self.status_var.set("✓ Data collection completed successfully")
+            messagebox.showinfo("Success", 
+                f"Data collection completed successfully!\n\n"
+                f"Collected {days} days of data for {len(symbols)} pair(s).\n"
+                f"You can now start training.")
 
         except Exception as e:
             self.logger.error(f"Error collecting data: {e}")
-            messagebox.showerror("Error", f"Data collection failed: {e}")
-            self.status_var.set("Ready")
+            self.status_var.set("✗ Data collection failed")
+            messagebox.showerror("Error", 
+                f"Data collection failed.\n\n"
+                f"Error: {str(e)}\n\n"
+                f"Please check your exchange settings and try again.")
 
     def start_training(self):
         """Start model training"""
         try:
+            # Validate training parameters
+            try:
+                epochs = int(self.train_epochs_var.get())
+                if epochs < 1 or epochs > 1000:
+                    messagebox.showwarning("Invalid Input", 
+                        "Epochs must be between 1 and 1000.\n\n"
+                        "Recommended: 10-50 epochs for most cases.")
+                    return
+            except ValueError:
+                messagebox.showerror("Invalid Input", "Please enter a valid number for epochs.")
+                return
+            
+            # Check if pairs are selected
+            if not self.pairs_listbox.curselection():
+                messagebox.showwarning("No Selection", "Please select a trading pair from the Exchange tab.")
+                return
+                
+            if not self.timeframes_listbox.curselection():
+                messagebox.showwarning("No Selection", "Please select a timeframe from the Exchange tab.")
+                return
+            
+            # Confirm training
+            if not messagebox.askyesno("Confirm Training",
+                f"Start model training with {epochs} epochs?\n\n"
+                f"This may take 10-30 minutes depending on data size.\n"
+                f"The application may appear unresponsive during training.\n\n"
+                f"Continue?"):
+                return
+                
             if self.trader is None:
                 self.trader = CryptoTrader(
                     exchange_id=self.exchange_var.get(),
@@ -892,22 +1261,56 @@ class CryptoTraderGUI(tk.Tk):
                     train_mode=True
                 )
 
-            self.status_var.set("Training model...")
-            self.trader.train_on_historical(epochs=int(self.train_epochs_var.get()))
+            self.status_var.set(f"🎓 Training model ({epochs} epochs)... Please wait...")
+            self.update_idletasks()  # Update UI immediately
+            
+            self.trader.train_on_historical(epochs=epochs)
 
             self.logger.info("Model training completed")
-            messagebox.showinfo("Success", "Model training completed successfully")
-            self.status_var.set("Ready")
+            self.status_var.set("✓ Model training completed successfully")
+            messagebox.showinfo("Success", 
+                f"Model training completed successfully!\n\n"
+                f"Trained for {epochs} epochs.\n"
+                f"The model is now ready for use.")
 
         except Exception as e:
             self.logger.error(f"Error training model: {e}")
-            messagebox.showerror("Error", f"Training failed: {e}")
-            self.status_var.set("Ready")
+            self.status_var.set("✗ Training failed")
+            messagebox.showerror("Error", 
+                f"Training failed.\n\n"
+                f"Error: {str(e)}\n\n"
+                f"Make sure you have collected data first.")
 
     def start_live_trading(self):
-        """Start live trading"""
+        """Start live trading with enhanced confirmations"""
         try:
-            if not messagebox.askyesno("Confirm", "Start live trading with real money?"):
+            # Multiple safety checks
+            if not messagebox.askyesno("⚠️ FIRST CONFIRMATION ⚠️",
+                "You are about to start LIVE TRADING with REAL MONEY.\n\n"
+                "This is NOT a simulation.\n\n"
+                "Are you absolutely sure you want to continue?",
+                icon='warning'):
+                return
+            
+            # Second confirmation
+            if not messagebox.askyesno("⚠️ FINAL CONFIRMATION ⚠️",
+                "FINAL WARNING: Live trading will use real funds!\n\n"
+                "Have you:\n"
+                "✓ Tested thoroughly in training mode?\n"
+                "✓ Set appropriate risk limits?\n"
+                "✓ Double-checked your API credentials?\n"
+                "✓ Started with a small amount?\n\n"
+                "Proceed with live trading?",
+                icon='warning'):
+                return
+            
+            # Validate selection
+            if not self.pairs_listbox.curselection():
+                messagebox.showerror("Error", "Please select a trading pair from the Exchange tab.")
+                return
+                
+            if not self.timeframes_listbox.curselection():
+                messagebox.showerror("Error", "Please select a timeframe from the Exchange tab.")
                 return
 
             if self.trader is None or self.trader.train_mode:
@@ -918,7 +1321,14 @@ class CryptoTraderGUI(tk.Tk):
                     train_mode=False
                 )
 
-            self.status_var.set("Live trading started")
+            self.status_var.set("▶️ Live trading started - Monitor carefully!")
+            self.update_trading_status(
+                "Live trading session started\n"
+                f"Pair: {self.pairs_listbox.get(self.pairs_listbox.curselection()[0])}\n"
+                f"Timeframe: {self.timeframes_listbox.get(self.timeframes_listbox.curselection()[0])}\n"
+                "Status: ACTIVE"
+            )
+            
             # Set initial balance from exchange
             balance = self.trader.get_account_balance()
             self.performance_tracker.initial_balance = balance
@@ -931,24 +1341,51 @@ class CryptoTraderGUI(tk.Tk):
 
         except Exception as e:
             self.logger.error(f"Error starting live trading: {e}")
-            messagebox.showerror("Error", f"Failed to start trading: {e}")
-            self.status_var.set("Ready")
+            self.status_var.set("✗ Failed to start trading")
+            self.update_trading_status(f"Error: {str(e)}")
+            messagebox.showerror("Error", 
+                f"Failed to start trading.\n\n"
+                f"Error: {str(e)}\n\n"
+                f"Please check your settings and logs.")
 
     def stop_trading(self):
         """Stop live trading"""
         try:
             if self.trader:
-                self.trader.stop()
-                self.logger.info("Trading stopped")
+                if messagebox.askyesno("Confirm Stop",
+                    "Stop all trading activity?\n\n"
+                    "This will:\n"
+                    "• Stop placing new trades\n"
+                    "• Keep existing positions open\n"
+                    "• Save current performance data\n\n"
+                    "Continue?"):
+                    
+                    self.trader.stop()
+                    self.logger.info("Trading stopped by user")
+                    self.status_var.set("⏹️ Trading stopped")
+                    self.update_trading_status("Trading session stopped by user")
 
-                # Save final performance snapshot
-                self.performance_tracker.save_history()
+                    # Save final performance snapshot
+                    self.performance_tracker.save_history()
 
-                # Reset performance tracker
-                self.performance_tracker.reset()
-        finally:
-                # Force update of all displays
-            self.force_performance_update()
+                    # Reset performance tracker
+                    self.performance_tracker.reset()
+                    
+                    # Force update of all displays
+                    self.force_performance_update()
+                    
+                    messagebox.showinfo("Trading Stopped", 
+                        "Trading has been stopped successfully.\n\n"
+                        "Performance data has been saved.")
+            else:
+                messagebox.showinfo("No Active Trading", "There is no active trading session to stop.")
+                
+        except Exception as e:
+            self.logger.error(f"Error stopping trading: {e}")
+            self.status_var.set("✗ Error stopping trading")
+            messagebox.showerror("Error", 
+                f"Error stopping trading.\n\n"
+                f"Error: {str(e)}")
 
     def force_performance_update(self):
         """Force update of all performance displays"""
