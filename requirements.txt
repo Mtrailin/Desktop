@@ -11,11 +11,6 @@ ta>=0.10.1  # Technical analysis indicators
 matplotlib>=3.4.3  # For plotting
 tensorboard>=2.8.0  # For monitoring training
 pyinstaller>=5.13.0  # For building executable
-typing>=3.7.4
-inspect>=0.1.0
-functools>=0.5
-logging>=0.5.1.2
 typing-extensions>=3.10.0.0
 jsonschema>=4.0.0
-analysis
 
