@@ -321,7 +321,7 @@ class SovereignAI:
             "reflection": "Evaluate actions for alignment and non-harm."
         }
         for f in self.fragments:
-            f.ingest(base)f.ingest(base)
+            f.ingest(base)
 
     def multiplex(self, query: str) -> List[Dict[str, str]]:
         out = []

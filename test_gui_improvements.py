@@ -56,8 +56,8 @@ def check_features(filename):
         'Confirmation dialogs': 'messagebox.askyesno',
         'Tooltips usage': 'ToolTip(',
         'Keyboard shortcuts': 'self.bind',
-        'Help dialogs': 'show_quick_start\|show_shortcuts\|show_about',
-        'Icon indicators': '✓\|✗\|⚠️\|▶️\|⏹️\|💾\|📊\|🎓',
+        'Help dialogs': r'show_quick_start\|show_shortcuts\|show_about',
+        'Icon indicators': r'✓\|✗\|⚠️\|▶️\|⏹️\|💾\|📊\|🎓',
     }
     
     with open(filename, 'r') as f:
