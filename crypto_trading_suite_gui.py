@@ -23,18 +23,106 @@ from trading_strategy import SystematicTradingStrategy, TradingParameters
 from endpoint_validator import EndpointValidator
 from config import load_config, setup_logging
 
+# Tooltip class for user-friendly help
+class ToolTip:
+    """Create a tooltip for a given widget"""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip_window = None
+        self.widget.bind("<Enter>", self.show_tooltip)
+        self.widget.bind("<Leave>", self.hide_tooltip)
+    
+    def show_tooltip(self, event=None):
+        x, y, _, _ = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 25
+        
+        self.tooltip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        
+        label = tk.Label(tw, text=self.text, justify='left',
+                        background="#ffffe0", relief='solid', borderwidth=1,
+                        font=("Arial", 9, "normal"))
+        label.pack(ipadx=1)
+    
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+
 class CryptoTradingSuite(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Crypto Trading Suite")
+        self.title("Crypto Trading Suite - Professional Edition")
         self.geometry("1200x800")
+        self.minsize(1000, 600)  # Set minimum window size
 
         # Initialize components
         self.config = load_config()
         self.logger = setup_logging()
+        self.create_menu_bar()
         self.setup_gui_elements()
         self.setup_trading_components()
+        
+    def create_menu_bar(self):
+        """Create menu bar with help and options"""
+        menubar = tk.Menu(self)
+        self.config(menu=menubar)
+        
+        # File menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Import Config", command=self.import_config)
+        file_menu.add_command(label="Export Config", command=self.export_config)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.quit, accelerator="Ctrl+Q")
+        
+        # Help menu
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="User Guide", command=self.show_user_guide)
+        help_menu.add_separator()
+        help_menu.add_command(label="About", command=self.show_about)
+        
+        # Bind keyboard shortcuts
+        self.bind('<Control-q>', lambda e: self.quit())
+        
+    def show_user_guide(self):
+        """Show user guide dialog"""
+        guide_text = """
+        Crypto Trading Suite - User Guide
+        
+        This professional trading suite integrates multiple
+        advanced features for cryptocurrency trading:
+        
+        • Trading Tab: Start/stop trading operations
+        • Monitoring Tab: Real-time performance metrics
+        • Validation Tab: Data and method validation tools
+        • Settings Tab: Configure all system parameters
+        
+        For detailed information, check the documentation.
+        """
+        messagebox.showinfo("User Guide", guide_text)
+        
+    def show_about(self):
+        """Show about dialog"""
+        about_text = """
+        Crypto Trading Suite
+        Professional Edition
+        
+        Advanced cryptocurrency trading platform with:
+        • Multi-exchange support
+        • Automated trading strategies
+        • Real-time validation
+        • Performance tracking
+        • Risk management
+        
+        Version: 1.0 Professional
+        """
+        messagebox.showinfo("About", about_text)
 
     def setup_gui_elements(self):
         """Setup all GUI elements"""
@@ -48,9 +136,43 @@ class CryptoTradingSuite(tk.Tk):
         self.create_validation_tab()
         self.create_settings_tab()
 
-        # Create status bar
-        self.status_bar = ttk.Label(self, text="Ready", relief=tk.SUNKEN)
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        # Create enhanced status bar
+        self.create_status_bar()
+        
+    def create_status_bar(self):
+        """Create enhanced status bar"""
+        status_frame = ttk.Frame(self)
+        status_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=2)
+        
+        self.status_var = tk.StringVar()
+        self.status_bar = ttk.Label(
+            status_frame, 
+            textvariable=self.status_var,
+            relief=tk.SUNKEN,
+            anchor=tk.W,
+            font=('Arial', 9)
+        )
+        self.status_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # Add timestamp
+        self.time_var = tk.StringVar()
+        time_label = ttk.Label(
+            status_frame,
+            textvariable=self.time_var,
+            relief=tk.SUNKEN,
+            anchor=tk.E,
+            font=('Arial', 9)
+        )
+        time_label.pack(side=tk.RIGHT, padx=5)
+        
+        self.status_var.set("✓ Ready - Professional Trading Suite")
+        self.update_time()
+        
+    def update_time(self):
+        """Update the time display"""
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.time_var.set(current_time)
+        self.after(1000, self.update_time)
 
     def setup_trading_components(self):
         """Initialize trading components"""
@@ -62,7 +184,7 @@ class CryptoTradingSuite(tk.Tk):
             self.method_validator = MethodValidator()
             self.data_validator = DataValidator()
 
-            self.update_status("Components initialized successfully")
+            self.update_status("✓ Components initialized successfully")
         except Exception as e:
             self.show_error(f"Error initializing components: {str(e)}")
 
@@ -71,16 +193,39 @@ class CryptoTradingSuite(tk.Tk):
         trading_frame = ttk.Frame(self.notebook)
         self.notebook.add(trading_frame, text="Trading")
 
-        # Add trading controls
-        controls_frame = ttk.LabelFrame(trading_frame, text="Trading Controls")
+        # Warning banner
+        warning_frame = ttk.Frame(trading_frame)
+        warning_frame.pack(fill=tk.X, padx=5, pady=5)
+        warning_label = ttk.Label(
+            warning_frame,
+            text="⚠️  Professional Trading Mode - Ensure proper configuration before trading",
+            foreground='orange',
+            font=('Arial', 10, 'bold')
+        )
+        warning_label.pack()
+
+        # Add trading controls with better styling
+        controls_frame = ttk.LabelFrame(trading_frame, text=" Trading Controls ", padding=10)
         controls_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        button_frame = ttk.Frame(controls_frame)
+        button_frame.pack(fill=tk.X, pady=5)
 
-        ttk.Button(controls_frame, text="Start Trading", command=self.start_trading).pack(side=tk.LEFT, padx=5)
-        ttk.Button(controls_frame, text="Stop Trading", command=self.stop_trading).pack(side=tk.LEFT, padx=5)
+        start_btn = ttk.Button(button_frame, text="▶️  Start Trading", command=self.start_trading)
+        start_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(start_btn, "Start automated trading with configured strategy")
+        
+        stop_btn = ttk.Button(button_frame, text="⏹️  Stop Trading", command=self.stop_trading)
+        stop_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        ToolTip(stop_btn, "Stop all trading activity immediately")
 
-        # Add trading view
-        self.trading_log = scrolledtext.ScrolledText(trading_frame, height=10)
-        self.trading_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Add trading log with label
+        log_frame = ttk.LabelFrame(trading_frame, text=" Trading Activity Log ", padding=5)
+        log_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        
+        self.trading_log = scrolledtext.ScrolledText(log_frame, height=15, wrap=tk.WORD)
+        self.trading_log.pack(fill=tk.BOTH, expand=True)
+        self.log_message("Trading log initialized. Ready to start.")
 
     def create_monitoring_tab(self):
         """Create the monitoring and performance tab"""
@@ -346,28 +491,53 @@ class CryptoTradingSuite(tk.Tk):
     def start_trading(self):
         """Start the trading system"""
         try:
+            if not messagebox.askyesno("Confirm Start",
+                "Start automated trading?\n\n"
+                "Ensure all settings are correct before proceeding.\n\n"
+                "Continue?"):
+                return
+                
             self.trader.run()
-            self.update_status("Trading started")
+            self.update_status("▶️ Trading started")
+            self.log_message("Trading session started successfully")
         except Exception as e:
             self.show_error(f"Error starting trading: {str(e)}")
+            self.log_message(f"ERROR: Failed to start trading - {str(e)}")
 
     def stop_trading(self):
         """Stop the trading system"""
         try:
-            self.trader.stop()
-            self.update_status("Trading stopped")
+            if messagebox.askyesno("Confirm Stop",
+                "Stop all trading activity?\n\n"
+                "Existing positions will remain open.\n\n"
+                "Continue?"):
+                
+                self.trader.stop()
+                self.update_status("⏹️ Trading stopped")
+                self.log_message("Trading session stopped by user")
         except Exception as e:
             self.show_error(f"Error stopping trading: {str(e)}")
+            self.log_message(f"ERROR: Failed to stop trading - {str(e)}")
+            
+    def log_message(self, message: str):
+        """Add message to trading log"""
+        if hasattr(self, 'trading_log'):
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.trading_log.insert(tk.END, f"[{timestamp}] {message}\n")
+            self.trading_log.see(tk.END)
 
     def update_status(self, message: str):
         """Update the status bar message"""
-        self.status_bar.config(text=message)
+        if hasattr(self, 'status_var'):
+            self.status_var.set(message)
         self.logger.info(message)
 
     def show_error(self, message: str):
         """Show error message"""
         messagebox.showerror("Error", message)
         self.logger.error(message)
+        if hasattr(self, 'status_var'):
+            self.status_var.set(f"✗ Error: {message}")
 
 if __name__ == "__main__":
     app = CryptoTradingSuite()
