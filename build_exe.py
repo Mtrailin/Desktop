@@ -4,7 +4,14 @@ import os
 import sys # pyright: ignore[reportUnusedImport]
 from pathlib import Path
 
-def build_exe(script_path='crypto_trader_gui.py', exe_name='CryptoTraderGUI'):
+def build_exe(script_name='crypto_trader_gui.py', exe_name='CryptoTraderGUI'):
+    """
+    Build executable from Python script using PyInstaller
+    
+    Args:
+        script_name: Name of the Python script to build (default: 'crypto_trader_gui.py')
+        exe_name: Name for the output executable (default: 'CryptoTraderGUI')
+    """
     # Get the current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,7 +20,7 @@ def build_exe(script_path='crypto_trader_gui.py', exe_name='CryptoTraderGUI'):
         Path(os.path.join(current_dir, dir_name)).mkdir(parents=True, exist_ok=True)
 
     # Define the paths for all required files
-    main_script = os.path.join(current_dir, script_path)
+    main_script = os.path.join(current_dir, script_name)
     readme_path = os.path.join(current_dir, 'README.md')
     env_path = os.path.join(current_dir, '.env')
     config_path = os.path.join(current_dir, 'config.py')
