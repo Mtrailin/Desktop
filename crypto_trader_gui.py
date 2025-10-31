@@ -1114,7 +1114,7 @@ class CryptoTraderGUI(tk.Tk):
         )
         time_label.pack(side=tk.RIGHT, padx=5)
         
-        self.status_var.set("✓ Ready - Welcome to Crypto Trader Control Panel")
+        self.status_var.set("✓ Ready - Crypto Trader")
         self.update_time()
         
     def update_time(self):

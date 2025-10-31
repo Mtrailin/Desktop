@@ -174,7 +174,7 @@ class CryptoTradingSuite(tk.Tk):
         )
         time_label.pack(side=tk.RIGHT, padx=5)
         
-        self.status_var.set("✓ Ready - Professional Trading Suite")
+        self.status_var.set("✓ Ready - Trading Suite")
         self.update_time()
         
     def update_time(self):
