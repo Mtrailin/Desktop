@@ -2,26 +2,30 @@
 Main GUI application for the Crypto Trading Suite.
 Integrates all components into a single unified interface.
 """
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+# Standard library imports
+import json
 import logging
+import queue
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-import threading
-import queue
-import json
 
-from method_validator import MethodValidator
-from data_validator import DataValidator
-from trading_types import MarketData, ValidationError
-from crypto_trader import CryptoTrader
-from market_data_collector import MarketDataCollector
-from performance_tracker import PerfomanceTracker
-from market_data_aggregator import MarketDataAggregator, AGGREGATOR_CONFIG
-from trading_strategy import SystematicTradingStrategy, TradingParameters
-from endpoint_validator import EndpointValidator
+# Third-party imports
+import tkinter as tk
+from tkinter import ttk, messagebox, scrolledtext
+
+# Local imports
 from config import load_config, setup_logging
+from crypto_trader import CryptoTrader
+from data_validator import DataValidator
+from endpoint_validator import EndpointValidator
+from market_data_aggregator import MarketDataAggregator, AGGREGATOR_CONFIG
+from market_data_collector import MarketDataCollector
+from method_validator import MethodValidator
+from performance_tracker import PerfomanceTracker
+from trading_strategy import SystematicTradingStrategy, TradingParameters
+from trading_types import MarketData, ValidationError
 
 # Tooltip class for user-friendly help
 class ToolTip:

@@ -1,12 +1,15 @@
-import pandas as pd
-import numpy as np
+# Standard library imports
+import json
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+# Third-party imports
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from typing import Dict, List, Optional, Tuple
-import json
-from pathlib import Path
 
 class PerformanceTracker:
     def __init__(self, initial_balance: float = 0.0):

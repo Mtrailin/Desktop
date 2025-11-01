@@ -1,10 +1,15 @@
-from market_data_aggregator import MarketDataAggregator, AGGREGATOR_CONFIG, AggregatorConfig
-from trading_strategy import SystematicTradingStrategy, TradingParameters
+# Standard library imports
 import asyncio
-from typing import Dict, List, Optional, Any, TypedDict # pyright: ignore[reportUnusedImport]
 import logging
 from datetime import datetime
+from typing import Dict, List, Optional, Any, TypedDict # pyright: ignore[reportUnusedImport]
+
+# Third-party imports
 import pandas as pd
+
+# Local imports
+from market_data_aggregator import MarketDataAggregator, AGGREGATOR_CONFIG, AggregatorConfig
+from trading_strategy import SystematicTradingStrategy, TradingParameters
 from trading_types import MarketData, AggregatedData, StrategySignal
 
 class Position(TypedDict):

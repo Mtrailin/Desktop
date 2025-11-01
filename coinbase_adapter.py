@@ -3,11 +3,14 @@ Coinbase Advanced Trade SDK Adapter
 Integrates the official Coinbase Advanced Trade Python SDK with the trading system.
 """
 
+# Standard library imports
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-import pandas as pd
 import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any
+
+# Third-party imports
+import pandas as pd
 
 try:
     from coinbase.rest import RESTClient

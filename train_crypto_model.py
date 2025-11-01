@@ -1,6 +1,9 @@
 # Example script showing how to use the crypto trader in training mode
-from crypto_trader import CryptoTrader
+# Standard library imports
 import logging
+
+# Local imports
+from crypto_trader import CryptoTrader
 
 # Setup logging
 logging.basicConfig(

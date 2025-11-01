@@ -1,12 +1,15 @@
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import ccxt
-import time
-from pathlib import Path
+# Standard library imports
 import json
 import logging
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List, Dict, Optional, Tuple
+
+# Third-party imports
+import ccxt
+import numpy as np
+import pandas as pd
 
 class MarketDataCollector:
     def __init__(self, exchange_id: str = 'binance', symbols: List[str] = None,

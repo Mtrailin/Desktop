@@ -1,9 +1,12 @@
-import os
-from dotenv import load_dotenv
+# Standard library imports
 import logging
-from pathlib import Path
+import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Any
+
+# Third-party imports
+from dotenv import load_dotenv
 
 def load_config() -> Dict[str, Dict[str, Any]]:
     """Load configuration from .env file and create necessary directories"""

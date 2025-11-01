@@ -3,12 +3,16 @@ Exchange Manager - Unified interface for multiple exchanges
 Supports both CCXT and native Coinbase Advanced Trade SDK
 """
 
+# Standard library imports
 import logging
-from typing import Optional, Dict, Any, List
-import pandas as pd
 from datetime import datetime
-import ccxt
+from typing import Optional, Dict, Any, List
 
+# Third-party imports
+import ccxt
+import pandas as pd
+
+# Local imports
 from coinbase_adapter import CoinbaseAdapter, COINBASE_SDK_AVAILABLE
 
 
@@ -107,7 +111,6 @@ class ExchangeManager:
                     '1h': 60, '2h': 120, '6h': 360, '1d': 1440
                 }
                 minutes = minutes_map.get(timeframe, 1)
-                from datetime import timedelta
                 start_time = end_time - timedelta(minutes=minutes * limit)
             
             df = self.adapter.get_candles(

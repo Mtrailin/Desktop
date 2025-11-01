@@ -1,17 +1,22 @@
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+# Standard library imports
 import json
+import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-from datetime import datetime
-import logging
+
+# Third-party imports
+import matplotlib.pyplot as plt
+import tkinter as tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+from tkinter import ttk, messagebox, scrolledtext
+
+# Local imports
 from crypto_trader import CryptoTrader
 from market_data_collector import MarketDataCollector
 from performance_tracker import PerformanceTracker
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 
 # Tooltip class for user-friendly help
 class ToolTip:
