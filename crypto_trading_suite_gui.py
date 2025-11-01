@@ -23,7 +23,7 @@ from endpoint_validator import EndpointValidator
 from market_data_aggregator import MarketDataAggregator, AGGREGATOR_CONFIG
 from market_data_collector import MarketDataCollector
 from method_validator import MethodValidator
-from performance_tracker import PerfomanceTracker
+from performance_tracker import PerformanceTracker
 from trading_strategy import SystematicTradingStrategy, TradingParameters
 from trading_types import MarketData, ValidationError
 
@@ -199,7 +199,7 @@ class CryptoTradingSuite(tk.Tk):
         try:
             self.trader = CryptoTrader()
             self.data_collector = MarketDataCollector()
-            self.performance_tracker = PerfomanceTracker()
+            self.performance_tracker = PerformanceTracker()
             self.endpoint_validator = EndpointValidator()
             self.method_validator = MethodValidator()
             self.data_validator = DataValidator()

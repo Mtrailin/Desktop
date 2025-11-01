@@ -2,21 +2,25 @@
 Build Your Own Trading System
 A comprehensive GUI application for creating customized trading strategies with multi-level settings.
 """
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext, filedialog
+# Standard library imports
 import json
+import logging
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, List
-from datetime import datetime
-import logging
 
+# Third-party imports
+import tkinter as tk
+from tkinter import ttk, messagebox, scrolledtext, filedialog
+
+# Local imports
 from crypto_trader import CryptoTrader
-from market_data_collector import MarketDataCollector
-from performance_tracker import PerfomanceTracker
-from trading_strategy import SystematicTradingStrategy, TradingParameters
 from data_validator import DataValidator
+from market_data_collector import MarketDataCollector
 from method_validator import MethodValidator
+from performance_tracker import PerformanceTracker
+from trading_strategy import SystematicTradingStrategy, TradingParameters
 
 
 class MultiLevelSettingsDialog(tk.Toplevel):
@@ -193,7 +197,7 @@ class BuildYourOwnTrading(tk.Tk):
         
         # Initialize components
         self.trader = None
-        self.performance_tracker = PerfomanceTracker()
+        self.performance_tracker = PerformanceTracker()
         self.data_validator = DataValidator()
         self.method_validator = MethodValidator()
         
