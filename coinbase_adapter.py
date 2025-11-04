@@ -49,7 +49,7 @@ class CoinbaseAdapter:
         """
         try:
             response = self.client.get_accounts()
-            return response.accounts or []
+            return getattr(response, 'accounts', None) or []
         except Exception as e:
             self.logger.error(f"Error fetching accounts: {e}")
             return []
@@ -80,7 +80,7 @@ class CoinbaseAdapter:
         """
         try:
             response = self.client.get_products()
-            return response.products or []
+            return getattr(response, 'products', None) or []
         except Exception as e:
             self.logger.error(f"Error listing products: {e}")
             return []
@@ -107,7 +107,7 @@ class CoinbaseAdapter:
                 granularity=granularity
             )
             
-            candles = response.candles or []
+            candles = getattr(response, 'candles', None) or []
             if not candles:
                 return pd.DataFrame()
             
@@ -236,7 +236,7 @@ class CoinbaseAdapter:
         """
         try:
             response = self.client.get_order(order_id=order_id)
-            return response.order or {}
+            return getattr(response, 'order', None) or {}
         except Exception as e:
             self.logger.error(f"Error fetching order {order_id}: {e}")
             return None
@@ -258,7 +258,7 @@ class CoinbaseAdapter:
                 product_id=product_id,
                 order_status=order_status
             )
-            return response.orders or []
+            return getattr(response, 'orders', None) or []
         except Exception as e:
             self.logger.error(f"Error listing orders: {e}")
             return []
@@ -280,7 +280,7 @@ class CoinbaseAdapter:
                 order_id=order_id,
                 product_id=product_id
             )
-            return response.fills or []
+            return getattr(response, 'fills', None) or []
         except Exception as e:
             self.logger.error(f"Error fetching fills: {e}")
             return []
