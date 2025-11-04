@@ -5,13 +5,14 @@ Integrates all components into a single unified interface.
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import logging
+import typing
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Optional, Dict
 import threading
 import queue
 import json
-
+import pandas
 from method_validator import MethodValidator
 from data_validator import DataValidator
 from trading_types import MarketData, ValidationError
