@@ -70,7 +70,7 @@ class CryptoTradingSuite(tk.Tk):
         self.time_update_id = None
 
         # Initialize components
-        self.config = load_config()
+        self.app_config = load_config()
         self.logger = setup_logging()
         self.create_menu_bar()
         self.setup_gui_elements()
@@ -429,14 +429,14 @@ class CryptoTradingSuite(tk.Tk):
 
         # Get settings for category
         settings_map = {
-            'exchange': self.config['exchange'],
-            'trading': self.config['trading'],
-            'risk': self.config['risk_management'],
-            'model': self.config['model'],
-            'performance': self.config['performance'],
-            'validation': self.config['validation'],
-            'advanced': self.config['advanced'],
-            'menubar': self.config['menubar'],
+            'exchange': self.app_config['exchange'],
+            'trading': self.app_config['trading'],
+            'risk': self.app_config['risk_management'],
+            'model': self.app_config['model'],
+            'performance': self.app_config['performance'],
+            'validation': self.app_config['validation'],
+            'advanced': self.app_config['advanced'],
+            'menubar': self.app_config['menubar'],
             }
 
         if category not in settings_map:
@@ -503,25 +503,25 @@ class CryptoTradingSuite(tk.Tk):
                     }
 
                     config_key = category_map.get(category)
-                    if not config_key or config_key not in self.config:
+                    if not config_key or config_key not in self.app_config:
                         continue
 
                     # Convert value based on type
                     try:
                         if value_type == bool:
-                            self.config[config_key][setting] = var.get()
+                            self.app_config[config_key][setting] = var.get()
                         elif value_type == int:
-                            self.config[config_key][setting] = int(var.get())
+                            self.app_config[config_key][setting] = int(var.get())
                         elif value_type == float:
-                            self.config[config_key][setting] = float(var.get())
+                            self.app_config[config_key][setting] = float(var.get())
                         elif value_type == list:
                             # Parse comma-separated values
                             value_str = var.get()
-                            self.config[config_key][setting] = [
+                            self.app_config[config_key][setting] = [
                                 x.strip() for x in value_str.split(',') if x.strip()
                             ]
                         else:
-                            self.config[config_key][setting] = var.get()
+                            self.app_config[config_key][setting] = var.get()
                     except (ValueError, AttributeError) as e:
                         self.logger.warning(f"Error converting setting {key}: {e}")
                         continue
@@ -536,7 +536,7 @@ class CryptoTradingSuite(tk.Tk):
     def reset_settings(self):
         """Reset settings to defaults"""
         if messagebox.askyesno("Confirm", "Reset all settings to defaults?"):
-            self.config = load_config()
+            self.app_config = load_config()
             self.update_status("Settings reset to defaults")
 
     def import_config(self):
@@ -550,7 +550,7 @@ class CryptoTradingSuite(tk.Tk):
             try:
                 import json
                 with open(filename, 'r') as f:
-                    self.config = json.load(f)
+                    self.app_config = json.load(f)
                 self.update_status(f"Configuration imported from {filename}")
             except Exception as e:
                 self.show_error(f"Error importing config: {str(e)}")
@@ -567,7 +567,7 @@ class CryptoTradingSuite(tk.Tk):
             try:
                 import json
                 with open(filename, 'w') as f:
-                    json.dump(self.config, f, indent=4)
+                    json.dump(self.app_config, f, indent=4)
                 self.update_status(f"Configuration exported to {filename}")
             except Exception as e:
                 self.show_error(f"Error exporting config: {str(e)}")
