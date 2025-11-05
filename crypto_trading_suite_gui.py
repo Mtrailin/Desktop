@@ -12,7 +12,7 @@ from typing import Any, Optional, Dict
 import threading
 import queue
 import json
-import pandas
+import pandas as pd
 from method_validator import MethodValidator
 from data_validator import DataValidator
 from trading_types import MarketData, ValidationError
@@ -429,14 +429,15 @@ class CryptoTradingSuite(tk.Tk):
 
         # Get settings for category
         settings_map = {
-            'exchange': self.config.get('exchange', {}),
-            'trading': self.config.get('trading', {}),
-            'risk': self.config.get('risk_management', {}),
-            'model': self.config.get('model', {}),
-            'performance': self.config.get('performance', {}),
-            'validation': self.config.get('validation', {}),
-            'advanced': self.config.get('advanced', {})
-        }
+            'exchange': self.config['exchange'],
+            'trading': self.config['trading'],
+            'risk': self.config['risk_management'],
+            'model': self.config['model'],
+            'performance': self.config['performance'],
+            'validation': self.config['validation'],
+            'advanced': self.config['advanced'],
+            'menubar': self.config['menubar'],
+            }
 
         if category not in settings_map:
             return
