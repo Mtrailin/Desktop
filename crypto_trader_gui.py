@@ -67,7 +67,7 @@ class CryptoTraderGUI(tk.Tk):
         self.time_update_id = None
 
         # Initialize configuration
-        self.config = self.load_config()
+        self.app_config = self.load_config()
 
         # Setup logger
         self.setup_logging()
@@ -139,7 +139,7 @@ class CryptoTraderGUI(tk.Tk):
         """Save current configuration to file"""
         config_path = Path("config/gui_config.json")
         with open(config_path, "w") as f:
-            json.dump(self.config, f, indent=4)
+            json.dump(self.app_config, f, indent=4)
 
     def setup_logging(self):
         """Setup logging configuration"""
@@ -268,7 +268,7 @@ class CryptoTraderGUI(tk.Tk):
 
         # Exchange selection
         ttk.Label(tab, text="Exchange:", font=('Arial', 10, 'bold')).grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        self.exchange_var = tk.StringVar(value=self.config["exchange"]["id"])
+        self.exchange_var = tk.StringVar(value=self.app_config["exchange"]["id"])
         exchange_combo = ttk.Combobox(
             tab,
             textvariable=self.exchange_var,
@@ -283,7 +283,7 @@ class CryptoTraderGUI(tk.Tk):
         cred_frame.grid(row=1, column=0, columnspan=2, padx=5, pady=10, sticky='ew')
         
         ttk.Label(cred_frame, text="API Key:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
-        self.api_key_var = tk.StringVar(value=self.config["exchange"]["api_key"])
+        self.api_key_var = tk.StringVar(value=self.app_config["exchange"]["api_key"])
         api_key_entry = ttk.Entry(
             cred_frame,
             textvariable=self.api_key_var,
@@ -300,7 +300,7 @@ class CryptoTraderGUI(tk.Tk):
         ttk.Checkbutton(cred_frame, text="Show", variable=self.show_api_key, command=toggle_api_key).grid(row=0, column=2, padx=5)
 
         ttk.Label(cred_frame, text="Secret Key:").grid(row=1, column=0, padx=5, pady=5, sticky='w')
-        self.secret_key_var = tk.StringVar(value=self.config["exchange"]["secret_key"])
+        self.secret_key_var = tk.StringVar(value=self.app_config["exchange"]["secret_key"])
         secret_key_entry = ttk.Entry(
             cred_frame,
             textvariable=self.secret_key_var,
@@ -333,7 +333,7 @@ class CryptoTraderGUI(tk.Tk):
         self.pairs_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         pairs_scrollbar.config(command=self.pairs_listbox.yview)
         
-        for symbol in self.config["exchange"]["symbols"]:
+        for symbol in self.app_config["exchange"]["symbols"]:
             self.pairs_listbox.insert(tk.END, symbol)
         ToolTip(self.pairs_listbox, "Select one or more trading pairs to monitor")
 
@@ -344,7 +344,7 @@ class CryptoTraderGUI(tk.Tk):
         ttk.Label(tf_frame, text="Select timeframes (Ctrl+Click for multiple):").pack(anchor='w', padx=5, pady=5)
         self.timeframes_listbox = tk.Listbox(tf_frame, selectmode=tk.MULTIPLE, height=6)
         self.timeframes_listbox.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        for tf in self.config["exchange"]["timeframes"]:
+        for tf in self.app_config["exchange"]["timeframes"]:
             self.timeframes_listbox.insert(tk.END, tf)
         ToolTip(self.timeframes_listbox, "Select timeframe intervals for analysis")
 
@@ -377,7 +377,7 @@ class CryptoTraderGUI(tk.Tk):
         mode_frame = ttk.LabelFrame(container, text=" Training Mode ", padding=10)
         mode_frame.pack(fill=tk.X, pady=(0, 10))
         
-        self.train_mode_var = tk.BooleanVar(value=self.config["training"]["mode"])
+        self.train_mode_var = tk.BooleanVar(value=self.app_config["training"]["mode"])
         mode_check = ttk.Checkbutton(
             mode_frame,
             text="Enable Training Mode (Safe - No Real Trading)",
@@ -400,7 +400,7 @@ class CryptoTraderGUI(tk.Tk):
 
         for i, (label, key, default, tooltip) in enumerate(params):
             ttk.Label(params_frame, text=label, font=('Arial', 9)).grid(row=i, column=0, padx=5, pady=5, sticky='w')
-            var = tk.StringVar(value=str(self.config["training"].get(key, default)))
+            var = tk.StringVar(value=str(self.app_config["training"].get(key, default)))
             entry = ttk.Entry(params_frame, textvariable=var, width=15)
             entry.grid(row=i, column=1, padx=5, pady=5, sticky='w')
             setattr(self, f"train_{key}_var", var)
@@ -473,7 +473,7 @@ class CryptoTraderGUI(tk.Tk):
 
         for i, (label, key, default, tooltip) in enumerate(params):
             ttk.Label(params_frame, text=label, font=('Arial', 9)).grid(row=i, column=0, padx=5, pady=5, sticky='w')
-            var = tk.StringVar(value=str(self.config["trading"].get(key, default)))
+            var = tk.StringVar(value=str(self.app_config["trading"].get(key, default)))
             entry = ttk.Entry(params_frame, textvariable=var, width=15)
             entry.grid(row=i, column=1, padx=5, pady=5, sticky='w')
             setattr(self, f"trade_{key}_var", var)
@@ -542,7 +542,7 @@ class CryptoTraderGUI(tk.Tk):
         
         # Hidden Size slider (16 to 256)
         ttk.Label(params_frame, text="Hidden Size:", font=('Arial', 9)).grid(row=0, column=0, padx=5, pady=10, sticky='w')
-        self.model_hidden_size_var = tk.IntVar(value=self.config["model"].get("hidden_size", 64))
+        self.model_hidden_size_var = tk.IntVar(value=self.app_config["model"].get("hidden_size", 64))
         hidden_slider = ttk.Scale(
             params_frame,
             from_=16,
@@ -558,7 +558,7 @@ class CryptoTraderGUI(tk.Tk):
         
         # Number of Layers slider (1 to 5)
         ttk.Label(params_frame, text="Number of Layers:", font=('Arial', 9)).grid(row=1, column=0, padx=5, pady=10, sticky='w')
-        self.model_num_layers_var = tk.IntVar(value=self.config["model"].get("num_layers", 2))
+        self.model_num_layers_var = tk.IntVar(value=self.app_config["model"].get("num_layers", 2))
         layers_slider = ttk.Scale(
             params_frame,
             from_=1,
@@ -574,7 +574,7 @@ class CryptoTraderGUI(tk.Tk):
         
         # Dropout Rate slider (0.0 to 0.5)
         ttk.Label(params_frame, text="Dropout Rate:", font=('Arial', 9)).grid(row=2, column=0, padx=5, pady=10, sticky='w')
-        self.model_dropout_var = tk.DoubleVar(value=self.config["model"].get("dropout", 0.2))
+        self.model_dropout_var = tk.DoubleVar(value=self.app_config["model"].get("dropout", 0.2))
         dropout_slider = ttk.Scale(
             params_frame,
             from_=0.0,
@@ -951,7 +951,7 @@ class CryptoTraderGUI(tk.Tk):
         app_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(app_frame, text="Theme:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.theme_var = tk.StringVar(value=self.config.get("theme", "default"))
+        self.theme_var = tk.StringVar(value=self.app_config.get("theme", "default"))
         ttk.Combobox(
             app_frame,
             textvariable=self.theme_var,
@@ -960,7 +960,7 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(app_frame, text="Language:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.language_var = tk.StringVar(value=self.config.get("language", "English"))
+        self.language_var = tk.StringVar(value=self.app_config.get("language", "English"))
         ttk.Combobox(
             app_frame,
             textvariable=self.language_var,
@@ -969,21 +969,21 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=1, column=1, padx=5, pady=5)
         
         ttk.Label(app_frame, text="Auto-save interval (min):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.autosave_var = tk.StringVar(value=str(self.config.get("autosave_interval", 5)))
+        self.autosave_var = tk.StringVar(value=str(self.app_config.get("autosave_interval", 5)))
         ttk.Entry(app_frame, textvariable=self.autosave_var, width=10).grid(row=2, column=1, padx=5, pady=5)
         
         # Display Settings
         display_frame = ttk.LabelFrame(tab, text="Display Settings", padding=10)
         display_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
-        self.show_tooltips_var = tk.BooleanVar(value=self.config.get("show_tooltips", True))
+        self.show_tooltips_var = tk.BooleanVar(value=self.app_config.get("show_tooltips", True))
         ttk.Checkbutton(
             display_frame,
             text="Show Tooltips",
             variable=self.show_tooltips_var
         ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
-        self.show_grid_var = tk.BooleanVar(value=self.config.get("show_grid", True))
+        self.show_grid_var = tk.BooleanVar(value=self.app_config.get("show_grid", True))
         ttk.Checkbutton(
             display_frame,
             text="Show Grid in Charts",
@@ -991,7 +991,7 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=1, column=0, padx=5, pady=5, sticky="w")
         
         ttk.Label(display_frame, text="Chart Refresh Rate (sec):").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.chart_refresh_var = tk.StringVar(value=str(self.config.get("chart_refresh", 5)))
+        self.chart_refresh_var = tk.StringVar(value=str(self.app_config.get("chart_refresh", 5)))
         ttk.Entry(display_frame, textvariable=self.chart_refresh_var, width=10).grid(row=2, column=1, padx=5, pady=5)
     
     def create_advanced_settings(self, parent_notebook):
@@ -1004,14 +1004,14 @@ class CryptoTraderGUI(tk.Tk):
         perf_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(perf_frame, text="Max Concurrent Requests:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.max_requests_var = tk.StringVar(value=str(self.config.get("max_concurrent_requests", 5)))
+        self.max_requests_var = tk.StringVar(value=str(self.app_config.get("max_concurrent_requests", 5)))
         ttk.Entry(perf_frame, textvariable=self.max_requests_var, width=10).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(perf_frame, text="Request Timeout (sec):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.request_timeout_var = tk.StringVar(value=str(self.config.get("request_timeout", 30)))
+        self.request_timeout_var = tk.StringVar(value=str(self.app_config.get("request_timeout", 30)))
         ttk.Entry(perf_frame, textvariable=self.request_timeout_var, width=10).grid(row=1, column=1, padx=5, pady=5)
         
-        self.enable_caching_var = tk.BooleanVar(value=self.config.get("enable_caching", True))
+        self.enable_caching_var = tk.BooleanVar(value=self.app_config.get("enable_caching", True))
         ttk.Checkbutton(
             perf_frame,
             text="Enable Data Caching",
@@ -1023,14 +1023,14 @@ class CryptoTraderGUI(tk.Tk):
         storage_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(storage_frame, text="Max History Days:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.max_history_var = tk.StringVar(value=str(self.config.get("max_history_days", 365)))
+        self.max_history_var = tk.StringVar(value=str(self.app_config.get("max_history_days", 365)))
         ttk.Entry(storage_frame, textvariable=self.max_history_var, width=10).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(storage_frame, text="Log Retention Days:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.log_retention_var = tk.StringVar(value=str(self.config.get("log_retention_days", 30)))
+        self.log_retention_var = tk.StringVar(value=str(self.app_config.get("log_retention_days", 30)))
         ttk.Entry(storage_frame, textvariable=self.log_retention_var, width=10).grid(row=1, column=1, padx=5, pady=5)
         
-        self.compress_old_data_var = tk.BooleanVar(value=self.config.get("compress_old_data", True))
+        self.compress_old_data_var = tk.BooleanVar(value=self.app_config.get("compress_old_data", True))
         ttk.Checkbutton(
             storage_frame,
             text="Compress Old Data",
@@ -1047,15 +1047,15 @@ class CryptoTraderGUI(tk.Tk):
         position_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(position_frame, text="Max Position Size (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.max_position_var = tk.StringVar(value=str(self.config.get("max_position_size", 10)))
+        self.max_position_var = tk.StringVar(value=str(self.app_config.get("max_position_size", 10)))
         ttk.Entry(position_frame, textvariable=self.max_position_var, width=10).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(position_frame, text="Max Open Positions:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.max_open_pos_var = tk.StringVar(value=str(self.config.get("max_open_positions", 5)))
+        self.max_open_pos_var = tk.StringVar(value=str(self.app_config.get("max_open_positions", 5)))
         ttk.Entry(position_frame, textvariable=self.max_open_pos_var, width=10).grid(row=1, column=1, padx=5, pady=5)
         
         ttk.Label(position_frame, text="Position Sizing Method:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.position_method_var = tk.StringVar(value=self.config.get("position_sizing_method", "Fixed"))
+        self.position_method_var = tk.StringVar(value=self.app_config.get("position_sizing_method", "Fixed"))
         ttk.Combobox(
             position_frame,
             textvariable=self.position_method_var,
@@ -1068,14 +1068,14 @@ class CryptoTraderGUI(tk.Tk):
         loss_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(loss_frame, text="Max Daily Loss (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.max_daily_loss_var = tk.StringVar(value=str(self.config.get("max_daily_loss", 5)))
+        self.max_daily_loss_var = tk.StringVar(value=str(self.app_config.get("max_daily_loss", 5)))
         ttk.Entry(loss_frame, textvariable=self.max_daily_loss_var, width=10).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(loss_frame, text="Max Weekly Loss (%):").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.max_weekly_loss_var = tk.StringVar(value=str(self.config.get("max_weekly_loss", 10)))
+        self.max_weekly_loss_var = tk.StringVar(value=str(self.app_config.get("max_weekly_loss", 10)))
         ttk.Entry(loss_frame, textvariable=self.max_weekly_loss_var, width=10).grid(row=1, column=1, padx=5, pady=5)
         
-        self.auto_stop_on_limit_var = tk.BooleanVar(value=self.config.get("auto_stop_on_limit", True))
+        self.auto_stop_on_limit_var = tk.BooleanVar(value=self.app_config.get("auto_stop_on_limit", True))
         ttk.Checkbutton(
             loss_frame,
             text="Auto-stop Trading on Limit Hit",
@@ -1091,21 +1091,21 @@ class CryptoTraderGUI(tk.Tk):
         alert_frame = ttk.LabelFrame(tab, text="Alert Preferences", padding=10)
         alert_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
-        self.notify_trades_var = tk.BooleanVar(value=self.config.get("notify_trades", True))
+        self.notify_trades_var = tk.BooleanVar(value=self.app_config.get("notify_trades", True))
         ttk.Checkbutton(
             alert_frame,
             text="Notify on Trades",
             variable=self.notify_trades_var
         ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
-        self.notify_errors_var = tk.BooleanVar(value=self.config.get("notify_errors", True))
+        self.notify_errors_var = tk.BooleanVar(value=self.app_config.get("notify_errors", True))
         ttk.Checkbutton(
             alert_frame,
             text="Notify on Errors",
             variable=self.notify_errors_var
         ).grid(row=1, column=0, padx=5, pady=5, sticky="w")
         
-        self.notify_limits_var = tk.BooleanVar(value=self.config.get("notify_limits", True))
+        self.notify_limits_var = tk.BooleanVar(value=self.app_config.get("notify_limits", True))
         ttk.Checkbutton(
             alert_frame,
             text="Notify on Loss Limits",
@@ -1116,7 +1116,7 @@ class CryptoTraderGUI(tk.Tk):
         method_frame = ttk.LabelFrame(tab, text="Notification Methods", padding=10)
         method_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
-        self.notify_email_var = tk.BooleanVar(value=self.config.get("notify_email", False))
+        self.notify_email_var = tk.BooleanVar(value=self.app_config.get("notify_email", False))
         ttk.Checkbutton(
             method_frame,
             text="Email Notifications",
@@ -1124,10 +1124,10 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
         ttk.Label(method_frame, text="Email Address:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.email_address_var = tk.StringVar(value=self.config.get("email_address", ""))
+        self.email_address_var = tk.StringVar(value=self.app_config.get("email_address", ""))
         ttk.Entry(method_frame, textvariable=self.email_address_var, width=30).grid(row=1, column=1, padx=5, pady=5)
         
-        self.notify_sound_var = tk.BooleanVar(value=self.config.get("notify_sound", True))
+        self.notify_sound_var = tk.BooleanVar(value=self.app_config.get("notify_sound", True))
         ttk.Checkbutton(
             method_frame,
             text="Sound Alerts",
@@ -1144,14 +1144,14 @@ class CryptoTraderGUI(tk.Tk):
         api_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         
         ttk.Label(api_frame, text="Rate Limit Buffer (%):").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-        self.rate_limit_buffer_var = tk.StringVar(value=str(self.config.get("rate_limit_buffer", 20)))
+        self.rate_limit_buffer_var = tk.StringVar(value=str(self.app_config.get("rate_limit_buffer", 20)))
         ttk.Entry(api_frame, textvariable=self.rate_limit_buffer_var, width=10).grid(row=0, column=1, padx=5, pady=5)
         
         ttk.Label(api_frame, text="Retry Attempts:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.retry_attempts_var = tk.StringVar(value=str(self.config.get("retry_attempts", 3)))
+        self.retry_attempts_var = tk.StringVar(value=str(self.app_config.get("retry_attempts", 3)))
         ttk.Entry(api_frame, textvariable=self.retry_attempts_var, width=10).grid(row=1, column=1, padx=5, pady=5)
         
-        self.use_testnet_var = tk.BooleanVar(value=self.config.get("use_testnet", False))
+        self.use_testnet_var = tk.BooleanVar(value=self.app_config.get("use_testnet", False))
         ttk.Checkbutton(
             api_frame,
             text="Use Testnet (Paper Trading)",
@@ -1162,7 +1162,7 @@ class CryptoTraderGUI(tk.Tk):
         integration_frame = ttk.LabelFrame(tab, text="External Integrations", padding=10)
         integration_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         
-        self.enable_telegram_var = tk.BooleanVar(value=self.config.get("enable_telegram", False))
+        self.enable_telegram_var = tk.BooleanVar(value=self.app_config.get("enable_telegram", False))
         ttk.Checkbutton(
             integration_frame,
             text="Enable Telegram Bot",
@@ -1170,10 +1170,10 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
         
         ttk.Label(integration_frame, text="Telegram Bot Token:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.telegram_token_var = tk.StringVar(value=self.config.get("telegram_token", ""))
+        self.telegram_token_var = tk.StringVar(value=self.app_config.get("telegram_token", ""))
         ttk.Entry(integration_frame, textvariable=self.telegram_token_var, width=30, show="*").grid(row=1, column=1, padx=5, pady=5)
         
-        self.enable_webhook_var = tk.BooleanVar(value=self.config.get("enable_webhook", False))
+        self.enable_webhook_var = tk.BooleanVar(value=self.app_config.get("enable_webhook", False))
         ttk.Checkbutton(
             integration_frame,
             text="Enable Webhook Notifications",
@@ -1181,52 +1181,52 @@ class CryptoTraderGUI(tk.Tk):
         ).grid(row=2, column=0, padx=5, pady=5, sticky="w")
         
         ttk.Label(integration_frame, text="Webhook URL:").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-        self.webhook_url_var = tk.StringVar(value=self.config.get("webhook_url", ""))
+        self.webhook_url_var = tk.StringVar(value=self.app_config.get("webhook_url", ""))
         ttk.Entry(integration_frame, textvariable=self.webhook_url_var, width=30).grid(row=3, column=1, padx=5, pady=5)
     
     def save_all_settings(self):
         """Save all settings from the settings tab"""
         try:
             # General settings
-            self.config["theme"] = self.theme_var.get()
-            self.config["language"] = self.language_var.get()
-            self.config["autosave_interval"] = int(self.autosave_var.get())
-            self.config["show_tooltips"] = self.show_tooltips_var.get()
-            self.config["show_grid"] = self.show_grid_var.get()
-            self.config["chart_refresh"] = int(self.chart_refresh_var.get())
+            self.app_config["theme"] = self.theme_var.get()
+            self.app_config["language"] = self.language_var.get()
+            self.app_config["autosave_interval"] = int(self.autosave_var.get())
+            self.app_config["show_tooltips"] = self.show_tooltips_var.get()
+            self.app_config["show_grid"] = self.show_grid_var.get()
+            self.app_config["chart_refresh"] = int(self.chart_refresh_var.get())
             
             # Advanced settings
-            self.config["max_concurrent_requests"] = int(self.max_requests_var.get())
-            self.config["request_timeout"] = int(self.request_timeout_var.get())
-            self.config["enable_caching"] = self.enable_caching_var.get()
-            self.config["max_history_days"] = int(self.max_history_var.get())
-            self.config["log_retention_days"] = int(self.log_retention_var.get())
-            self.config["compress_old_data"] = self.compress_old_data_var.get()
+            self.app_config["max_concurrent_requests"] = int(self.max_requests_var.get())
+            self.app_config["request_timeout"] = int(self.request_timeout_var.get())
+            self.app_config["enable_caching"] = self.enable_caching_var.get()
+            self.app_config["max_history_days"] = int(self.max_history_var.get())
+            self.app_config["log_retention_days"] = int(self.log_retention_var.get())
+            self.app_config["compress_old_data"] = self.compress_old_data_var.get()
             
             # Risk management settings
-            self.config["max_position_size"] = float(self.max_position_var.get())
-            self.config["max_open_positions"] = int(self.max_open_pos_var.get())
-            self.config["position_sizing_method"] = self.position_method_var.get()
-            self.config["max_daily_loss"] = float(self.max_daily_loss_var.get())
-            self.config["max_weekly_loss"] = float(self.max_weekly_loss_var.get())
-            self.config["auto_stop_on_limit"] = self.auto_stop_on_limit_var.get()
+            self.app_config["max_position_size"] = float(self.max_position_var.get())
+            self.app_config["max_open_positions"] = int(self.max_open_pos_var.get())
+            self.app_config["position_sizing_method"] = self.position_method_var.get()
+            self.app_config["max_daily_loss"] = float(self.max_daily_loss_var.get())
+            self.app_config["max_weekly_loss"] = float(self.max_weekly_loss_var.get())
+            self.app_config["auto_stop_on_limit"] = self.auto_stop_on_limit_var.get()
             
             # Notification settings
-            self.config["notify_trades"] = self.notify_trades_var.get()
-            self.config["notify_errors"] = self.notify_errors_var.get()
-            self.config["notify_limits"] = self.notify_limits_var.get()
-            self.config["notify_email"] = self.notify_email_var.get()
-            self.config["email_address"] = self.email_address_var.get()
-            self.config["notify_sound"] = self.notify_sound_var.get()
+            self.app_config["notify_trades"] = self.notify_trades_var.get()
+            self.app_config["notify_errors"] = self.notify_errors_var.get()
+            self.app_config["notify_limits"] = self.notify_limits_var.get()
+            self.app_config["notify_email"] = self.notify_email_var.get()
+            self.app_config["email_address"] = self.email_address_var.get()
+            self.app_config["notify_sound"] = self.notify_sound_var.get()
             
             # API & integration settings
-            self.config["rate_limit_buffer"] = int(self.rate_limit_buffer_var.get())
-            self.config["retry_attempts"] = int(self.retry_attempts_var.get())
-            self.config["use_testnet"] = self.use_testnet_var.get()
-            self.config["enable_telegram"] = self.enable_telegram_var.get()
-            self.config["telegram_token"] = self.telegram_token_var.get()
-            self.config["enable_webhook"] = self.enable_webhook_var.get()
-            self.config["webhook_url"] = self.webhook_url_var.get()
+            self.app_config["rate_limit_buffer"] = int(self.rate_limit_buffer_var.get())
+            self.app_config["retry_attempts"] = int(self.retry_attempts_var.get())
+            self.app_config["use_testnet"] = self.use_testnet_var.get()
+            self.app_config["enable_telegram"] = self.enable_telegram_var.get()
+            self.app_config["telegram_token"] = self.telegram_token_var.get()
+            self.app_config["enable_webhook"] = self.enable_webhook_var.get()
+            self.app_config["webhook_url"] = self.webhook_url_var.get()
             
             self.save_config()
             self.logger.info("All settings saved successfully")
@@ -1241,7 +1241,7 @@ class CryptoTraderGUI(tk.Tk):
         if messagebox.askyesno("Confirm Reset", "Are you sure you want to reset all settings to defaults?"):
             try:
                 # Reset to default configuration
-                self.config = self.load_config()
+                self.app_config = self.load_config()
                 
                 # Reload all UI elements with default values
                 # This would need to be implemented for each variable
@@ -1317,13 +1317,13 @@ class CryptoTraderGUI(tk.Tk):
                 messagebox.showwarning("Validation Error", "Please select at least one timeframe.")
                 return
             
-            self.config["exchange"]["id"] = self.exchange_var.get()
-            self.config["exchange"]["api_key"] = self.api_key_var.get()
-            self.config["exchange"]["secret_key"] = self.secret_key_var.get()
-            self.config["exchange"]["symbols"] = [
+            self.app_config["exchange"]["id"] = self.exchange_var.get()
+            self.app_config["exchange"]["api_key"] = self.api_key_var.get()
+            self.app_config["exchange"]["secret_key"] = self.secret_key_var.get()
+            self.app_config["exchange"]["symbols"] = [
                 self.pairs_listbox.get(i) for i in self.pairs_listbox.curselection()
             ]
-            self.config["exchange"]["timeframes"] = [
+            self.app_config["exchange"]["timeframes"] = [
                 self.timeframes_listbox.get(i) for i in self.timeframes_listbox.curselection()
             ]
 
@@ -1333,8 +1333,8 @@ class CryptoTraderGUI(tk.Tk):
             messagebox.showinfo("Success", 
                 f"Exchange settings saved successfully!\n\n"
                 f"Exchange: {self.exchange_var.get()}\n"
-                f"Trading Pairs: {len(self.config['exchange']['symbols'])}\n"
-                f"Timeframes: {len(self.config['exchange']['timeframes'])}")
+                f"Trading Pairs: {len(self.app_config['exchange']['symbols'])}\n"
+                f"Timeframes: {len(self.app_config['exchange']['timeframes'])}")
 
         except Exception as e:
             self.logger.error(f"Error saving exchange settings: {e}")
