@@ -427,16 +427,16 @@ class CryptoTradingSuite(tk.Tk):
         for widget in self.settings_detail_frame.winfo_children():
             widget.destroy()
 
-        # Get settings for category
+        # Get settings for category - use .get() to handle missing keys gracefully
         settings_map = {
-            'exchange': self.app_config['exchange'],
-            'trading': self.app_config['trading'],
-            'risk': self.app_config['risk_management'],
-            'model': self.app_config['model'],
-            'performance': self.app_config['performance'],
-            'validation': self.app_config['validation'],
-            'advanced': self.app_config['advanced'],
-            'menubar': self.app_config['menubar'],
+            'exchange': self.app_config.get('exchange', {}),
+            'trading': self.app_config.get('trading', {}),
+            'risk': self.app_config.get('risk_management', {}),
+            'model': self.app_config.get('model', {}),
+            'performance': self.app_config.get('performance', {}),
+            'validation': self.app_config.get('validation', {}),
+            'advanced': self.app_config.get('advanced', {}),
+            'menubar': self.app_config.get('menubar', {}),
             }
 
         if category not in settings_map:
@@ -503,8 +503,12 @@ class CryptoTradingSuite(tk.Tk):
                     }
 
                     config_key = category_map.get(category)
-                    if not config_key or config_key not in self.app_config:
+                    if not config_key:
                         continue
+                    
+                    # Ensure the config key exists, create if not
+                    if config_key not in self.app_config:
+                        self.app_config[config_key] = {}
 
                     # Convert value based on type
                     try:
