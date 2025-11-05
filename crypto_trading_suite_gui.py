@@ -195,7 +195,7 @@ class CryptoTradingSuite(tk.Tk):
         try:
             self.trader = CryptoTrader()
             self.data_collector = MarketDataCollector()
-            self.performance_tracker = PerfomanceTracker()
+            self.performance_tracker = PerformanceTracker()
             self.endpoint_validator = EndpointValidator()
             self.method_validator = MethodValidator()
             self.data_validator = DataValidator()
