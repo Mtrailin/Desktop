@@ -292,7 +292,7 @@ class BuildYourOwnTrading(tk.Tk):
     def create_menu_bar(self):
         """Create application menu bar"""
         menubar = tk.Menu(self)
-        self.config(menu=menubar)
+        self.configure(menu=menubar)
         
         # File menu
         file_menu = tk.Menu(menubar, tearoff=0)
